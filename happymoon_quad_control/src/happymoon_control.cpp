@@ -45,10 +45,10 @@ void HappyMoonControl::joyStickCallback(const sensor_msgs::Joy::ConstPtr& joy)
     sensor_msgs::Joy ctrlAngleThrustData;
     ctrlAngleThrustData.header.stamp = ros::Time::now();
     ctrlAngleThrustData.header.frame_id = std::string("FRD");
-    ctrlAngleThrustData.axes.push_back(-joy->axes[3] * 10);//roll
-    ctrlAngleThrustData.axes.push_back(joy->axes[4] * 10); //pitch
-    ctrlAngleThrustData.axes.push_back((joy->axes[1] + 1.0)/2);      //thrust
-    ctrlAngleThrustData.axes.push_back(joy->axes[0]);   //yawRate
+    ctrlAngleThrustData.axes.push_back(joy->axes[3] * 10);              //roll    0 - 10 deg
+    ctrlAngleThrustData.axes.push_back(joy->axes[4] * 10);              //pitch   0 - 10 deg
+    ctrlAngleThrustData.axes.push_back((joy->axes[1] + 1.0) * 25);      //thrust  0 - 50 thrust
+    ctrlAngleThrustData.axes.push_back(-joy->axes[0] * 50);             //yawRate 0 - 50 deg  
 
     ctrlAngleThrust.publish(ctrlAngleThrustData);
     ROS_INFO("roll:%f,pitch:%f,THRUST:%f,YawRate:%f",-joy->axes[3] * 10,joy->axes[4] * 10,(joy->axes[1] + 1.0)/2,joy->axes[0]);
