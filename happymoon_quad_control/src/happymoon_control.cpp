@@ -25,7 +25,7 @@ HappyMoonControl::HappyMoonControl()
     nh.param("yaw_error_max", happymoon_config.yaw_error_max, 0.0);
 
     // Publish the control signal
-    ctrlAngleThrust = nh.advertise<sensor_msgs::Joy>("/dji_sdk/flight_control_setpoint_rollpitch_yawrate_thrust", 10);
+    ctrlAngleThrust = nh.advertise<sensor_msgs::Joy>("/djiros/ctrl", 10);
     // Subcribe the control signal
     joy_cmd = nh.subscribe<sensor_msgs::Joy>("/joy", 10, boost::bind(&HappyMoonControl::joyStickCallback, this, _1));
     // Subcribe the reference signal 
@@ -41,13 +41,15 @@ void HappyMoonControl::joyStickCallback(const sensor_msgs::Joy::ConstPtr& joy)
         return;
     }
     sensor_msgs::Joy ctrlAngleThrustData;
+    ctrlAngleThrustData.header.stamp = ros::Time::now();
+    ctrlAngleThrustData.header.frame_id = std::string("FRD");
     ctrlAngleThrustData.axes.push_back(-joy->axes[3] * 10);//roll
     ctrlAngleThrustData.axes.push_back(joy->axes[4] * 10); //pitch
     ctrlAngleThrustData.axes.push_back((joy->axes[1] + 1.0)/2);      //thrust
-    ctrlAngleThrustData.axes.push_back(joy->axes[0] *2);   //yawRate
+    ctrlAngleThrustData.axes.push_back(joy->axes[0]);   //yawRate
 
     ctrlAngleThrust.publish(ctrlAngleThrustData);
-    ROS_INFO("roll:%f,pitch:%f,THRUST:%f,YawRate:%f",-joy->axes[3] * 10,joy->axes[4] * 10,(joy->axes[1] + 1.0)/2,joy->axes[0] *5);
+    ROS_INFO("roll:%f,pitch:%f,THRUST:%f,YawRate:%f",-joy->axes[3] * 10,joy->axes[4] * 10,(joy->axes[1] + 1.0)/2,joy->axes[0]);
 
 }
 
