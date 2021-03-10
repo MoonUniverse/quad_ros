@@ -32,7 +32,9 @@ HappyMoonControl::HappyMoonControl()
     // reference_state = nh.subscribe<geometry_msgs::PoseWithCovarianceStamped>("");
     // Subcribe the VIO nav msg
     vision_odom = nh.subscribe<nav_msgs::Odometry>("/vins_estimator/imu_propagate", 10,
-                                &HappyMoonControl::stateEstimateCallback, this, ros::TransportHints().tcpNoDelay());
+                                                    boost::bind(&HappyMoonControl::stateEstimateCallback, this, _1),
+                                                        ros::VoidConstPtr(),
+                                                          ros::TransportHints().tcpNoDelay());
 }
 
 void HappyMoonControl::joyStickCallback(const sensor_msgs::Joy::ConstPtr& joy)
