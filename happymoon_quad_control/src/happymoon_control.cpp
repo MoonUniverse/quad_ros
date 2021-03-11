@@ -1,131 +1,145 @@
 #include "happymoon_control.h"
 
-namespace happymoon_control
-{
+namespace happymoon_control {
 
-HappyMoonControl::HappyMoonControl()
-{
-    ros::NodeHandle nh("~");
-    nh.param("kpxy", happymoon_config.kpxy, 0.0);
-    nh.param("kdxy", happymoon_config.kdxy, 0.0);
-    nh.param("kpz", happymoon_config.kpz, 0.0);
-    nh.param("kdz", happymoon_config.kdz, 0.0);
-    nh.param("krp", happymoon_config.krp, 0.0);
-    nh.param("kyaw", happymoon_config.kyaw, 0.0);
+HappyMoonControl::HappyMoonControl() {
+  ros::NodeHandle nh("~");
+  nh.param("kpxy", happymoon_config.kpxy, 0.0);
+  nh.param("kdxy", happymoon_config.kdxy, 0.0);
+  nh.param("kpz", happymoon_config.kpz, 0.0);
+  nh.param("kdz", happymoon_config.kdz, 0.0);
+  nh.param("krp", happymoon_config.krp, 0.0);
+  nh.param("kyaw", happymoon_config.kyaw, 0.0);
 
-    nh.param("refVelXYKp", happymoon_config.refVelXYKp, 0.0);
-    nh.param("refVelZKp", happymoon_config.refVelZKp, 0.0);
-    nh.param("refVelHeadingKp", happymoon_config.refVelHeadingKp, 0.0);
-    nh.param("refVelRateheadingKp", happymoon_config.refVelRateheadingKp, 0.0);
+  nh.param("refVelXYKp", happymoon_config.refVelXYKp, 0.0);
+  nh.param("refVelZKp", happymoon_config.refVelZKp, 0.0);
+  nh.param("refVelHeadingKp", happymoon_config.refVelHeadingKp, 0.0);
+  nh.param("refVelRateheadingKp", happymoon_config.refVelRateheadingKp, 0.0);
 
-    nh.param("pxy_error_max", happymoon_config.pxy_error_max, 0.0);
-    nh.param("vxy_error_max", happymoon_config.vxy_error_max, 0.0);
-    nh.param("pz_error_max", happymoon_config.pz_error_max, 0.0);
-    nh.param("vz_error_max", happymoon_config.vz_error_max, 0.0);
-    nh.param("yaw_error_max", happymoon_config.yaw_error_max, 0.0);
+  nh.param("pxy_error_max", happymoon_config.pxy_error_max, 0.0);
+  nh.param("vxy_error_max", happymoon_config.vxy_error_max, 0.0);
+  nh.param("pz_error_max", happymoon_config.pz_error_max, 0.0);
+  nh.param("vz_error_max", happymoon_config.vz_error_max, 0.0);
+  nh.param("yaw_error_max", happymoon_config.yaw_error_max, 0.0);
 
-    // Publish the control signal
-    ctrlAngleThrust = nh.advertise<sensor_msgs::Joy>("/djiros/ctrl", 10);
-    // Subcribe the control signal
-    joy_cmd = nh.subscribe<sensor_msgs::Joy>("/joy", 10, boost::bind(&HappyMoonControl::joyStickCallback, this, _1));
-    // Subcribe the reference signal 
-    // reference_state = nh.subscribe<geometry_msgs::PoseWithCovarianceStamped>("");
-    // Subcribe the VIO nav msg
-    vision_odom = nh.subscribe<nav_msgs::Odometry>("/vins_estimator/imu_propagate", 10,
-                                                    boost::bind(&HappyMoonControl::stateEstimateCallback, this, _1),
-                                                        ros::VoidConstPtr(),
-                                                          ros::TransportHints().tcpNoDelay());
+  // Publish the control signal
+  ctrlAngleThrust = nh.advertise<sensor_msgs::Joy>("/djiros/ctrl", 10);
+  // Subcribe the control signal
+  joy_cmd = nh.subscribe<sensor_msgs::Joy>(
+      "/joy", 10, boost::bind(&HappyMoonControl::joyStickCallback, this, _1));
+  // Subcribe the reference signal
+  // reference_state =
+  // nh.subscribe<geometry_msgs::PoseWithCovarianceStamped>(""); Subcribe the
+  // VIO nav msg
+  vision_odom = nh.subscribe<nav_msgs::Odometry>(
+      "/vins_estimator/imu_propagate", 10,
+      boost::bind(&HappyMoonControl::stateEstimateCallback, this, _1),
+      ros::VoidConstPtr(), ros::TransportHints().tcpNoDelay());
 }
 
-void HappyMoonControl::joyStickCallback(const sensor_msgs::Joy::ConstPtr& joy)
-{
-    if(joy == nullptr){
-        return;
-    }
-    sensor_msgs::Joy ctrlAngleThrustData;
-    ctrlAngleThrustData.header.stamp = ros::Time::now();
-    ctrlAngleThrustData.header.frame_id = std::string("FRD");
-    ctrlAngleThrustData.axes.push_back(joy->axes[3] * 10);              //roll    0 - 10 deg
-    ctrlAngleThrustData.axes.push_back(joy->axes[4] * 10);              //pitch   0 - 10 deg
-    ctrlAngleThrustData.axes.push_back((joy->axes[1] + 1.0) * 25);      //thrust  0 - 50 thrust
-    ctrlAngleThrustData.axes.push_back(-joy->axes[0] * 50);             //yawRate 0 - 50 deg  
+void HappyMoonControl::joyStickCallback(const sensor_msgs::Joy::ConstPtr &joy) {
+  if (joy == nullptr) {
+    return;
+  }
+  sensor_msgs::Joy ctrlAngleThrustData;
+  ctrlAngleThrustData.header.stamp = ros::Time::now();
+  ctrlAngleThrustData.header.frame_id = std::string("FRD");
+  ctrlAngleThrustData.axes.push_back(joy->axes[3] * 10); // roll    0 - 10 deg
+  ctrlAngleThrustData.axes.push_back(joy->axes[4] * 10); // pitch   0 - 10 deg
+  ctrlAngleThrustData.axes.push_back((joy->axes[1] + 1.0) *
+                                     25); // thrust  0 - 50 thrust
+  ctrlAngleThrustData.axes.push_back(-joy->axes[0] * 50); // yawRate 0 - 50 deg
 
-    ctrlAngleThrust.publish(ctrlAngleThrustData);
-    ROS_INFO("roll:%f,pitch:%f,THRUST:%f,YawRate:%f",-joy->axes[3] * 10,joy->axes[4] * 10,(joy->axes[1] + 1.0)/2,joy->axes[0]);
-
+  ctrlAngleThrust.publish(ctrlAngleThrustData);
+  ROS_INFO("roll:%f,pitch:%f,THRUST:%f,YawRate:%f", -joy->axes[3] * 10,
+           joy->axes[4] * 10, (joy->axes[1] + 1.0) / 2, joy->axes[0]);
 }
 
-void HappyMoonControl::stateEstimateCallback(const nav_msgs::Odometry::ConstPtr& msg)
-{
-    if (msg == nullptr) {
-        return;
-    }    
-    std::lock_guard<std::mutex> main_lock(main_mutex_);
-    QuadStateEstimateData happymoon_state_estimate;
-    QuadStateReferenceData happymoon_state_reference;
-    happymoon_state_estimate = QuadStateEstimate(*msg);
-    happymoon_state_reference = QuadReferenceState(happymoon_reference,happymoon_state_estimate);
-    ControlRun(happymoon_state_estimate,happymoon_state_reference,happymoon_config);
+void HappyMoonControl::stateEstimateCallback(
+    const nav_msgs::Odometry::ConstPtr &msg) {
+  if (msg == nullptr) {
+    return;
+  }
+  std::lock_guard<std::mutex> main_lock(main_mutex_);
+  QuadStateEstimateData happymoon_state_estimate;
+  QuadStateReferenceData happymoon_state_reference;
+  happymoon_state_estimate = QuadStateEstimate(*msg);
+  happymoon_state_reference =
+      QuadReferenceState(happymoon_reference, happymoon_state_estimate);
+  ControlRun(happymoon_state_estimate, happymoon_state_reference,
+             happymoon_config);
 }
 
-QuadStateReferenceData HappyMoonControl::QuadReferenceState(HappymoonReference ref_msg,QuadStateEstimateData est_msg){
+QuadStateReferenceData
+HappyMoonControl::QuadReferenceState(HappymoonReference ref_msg,
+                                     QuadStateEstimateData est_msg) {
   QuadStateReferenceData happymoon_reference_state;
-  happymoon_reference_state.position.x() =  ref_msg.position.x();
-  happymoon_reference_state.position.y() =  ref_msg.position.y();
-  happymoon_reference_state.position.z() =  ref_msg.position.z();
+  happymoon_reference_state.position.x() = ref_msg.position.x();
+  happymoon_reference_state.position.y() = ref_msg.position.y();
+  happymoon_reference_state.position.z() = ref_msg.position.z();
   happymoon_reference_state.heading = ref_msg.heading;
-  happymoon_reference_state.velocity.x() =  happymoon_config.refVelXYKp * (ref_msg.position.x() - est_msg.position.x());
-  happymoon_reference_state.velocity.y() =  happymoon_config.refVelXYKp * (ref_msg.position.y() - est_msg.position.y());
-  happymoon_reference_state.velocity.z() =  happymoon_config.refVelZKp * (ref_msg.position.z() - est_msg.position.z());
+  happymoon_reference_state.velocity.x() =
+      happymoon_config.refVelXYKp *
+      (ref_msg.position.x() - est_msg.position.x());
+  happymoon_reference_state.velocity.y() =
+      happymoon_config.refVelXYKp *
+      (ref_msg.position.y() - est_msg.position.y());
+  happymoon_reference_state.velocity.z() =
+      happymoon_config.refVelZKp *
+      (ref_msg.position.z() - est_msg.position.z());
 
   return happymoon_reference_state;
 }
 
 QuadStateEstimateData HappyMoonControl::QuadStateEstimate(
-     const nav_msgs::Odometry& state_estimate_msg)
-{  
-  QuadStateEstimateData happymoon_state_estimate;  
+    const nav_msgs::Odometry &state_estimate_msg) {
+  QuadStateEstimateData happymoon_state_estimate;
   timestamp = state_estimate_msg.header.stamp;
-  happymoon_state_estimate.position = geometryToEigen_.geometryToEigen(state_estimate_msg.pose.pose.position);
-  happymoon_state_estimate.velocity = geometryToEigen_.geometryToEigen(state_estimate_msg.twist.twist.linear);
-  happymoon_state_estimate.orientation = geometryToEigen_.geometryToEigen(state_estimate_msg.pose.pose.orientation);
-  happymoon_state_estimate.roll_pitch_yaw = mathcommon_.quaternionToEulerAnglesZYX(happymoon_state_estimate.orientation);
-  happymoon_state_estimate.bodyrates = geometryToEigen_.geometryToEigen(state_estimate_msg.twist.twist.angular);
+  happymoon_state_estimate.position =
+      geometryToEigen_.geometryToEigen(state_estimate_msg.pose.pose.position);
+  happymoon_state_estimate.velocity =
+      geometryToEigen_.geometryToEigen(state_estimate_msg.twist.twist.linear);
+  happymoon_state_estimate.orientation = geometryToEigen_.geometryToEigen(
+      state_estimate_msg.pose.pose.orientation);
+  happymoon_state_estimate.roll_pitch_yaw =
+      mathcommon_.quaternionToEulerAnglesZYX(
+          happymoon_state_estimate.orientation);
+  happymoon_state_estimate.bodyrates =
+      geometryToEigen_.geometryToEigen(state_estimate_msg.twist.twist.angular);
 
   return happymoon_state_estimate;
 }
 
-
-void HappyMoonControl::ControlRun(const QuadStateEstimateData& state_estimate,
-                                    const QuadStateReferenceData& state_reference,
-                                        const PositionControllerParams& config){
-
-    ControlCommand command;
-    // Compute desired control commands                                        
-    const Eigen::Vector3d pid_error_accelerations =
+void HappyMoonControl::ControlRun(const QuadStateEstimateData &state_estimate,
+                                  const QuadStateReferenceData &state_reference,
+                                  const PositionControllerParams &config) {
+  ControlCommand command;
+  // Compute desired control commands
+  const Eigen::Vector3d pid_error_accelerations =
       computePIDErrorAcc(state_estimate, state_reference, config);
-    const Eigen::Vector3d desired_acceleration = pid_error_accelerations - kGravity_;
-    command.collective_thrust = computeDesiredCollectiveMassNormalizedThrust(
+  const Eigen::Vector3d desired_acceleration =
+      pid_error_accelerations - kGravity_;
+  command.collective_thrust = computeDesiredCollectiveMassNormalizedThrust(
       state_estimate.orientation, desired_acceleration, config);
-    const Eigen::Quaterniond desired_attitude =
+  const Eigen::Quaterniond desired_attitude =
       computeDesiredAttitude(desired_acceleration, state_reference.heading,
                              state_estimate.orientation);
-    const Eigen::Vector3d desired_r_p_y = mathcommon_.quaternionToEulerAnglesZYX(desired_attitude);
+  const Eigen::Vector3d desired_r_p_y =
+      mathcommon_.quaternionToEulerAnglesZYX(desired_attitude);
 
-    sensor_msgs::Joy controlAngleThrust;
-    controlAngleThrust.axes.push_back(desired_r_p_y.x());//roll
-    controlAngleThrust.axes.push_back(desired_r_p_y.y());//pitch
-    controlAngleThrust.axes.push_back(command.collective_thrust);//thrust
-    controlAngleThrust.axes.push_back(config.kyaw * desired_r_p_y.z());//yawRate
+  sensor_msgs::Joy controlAngleThrust;
+  controlAngleThrust.axes.push_back(desired_r_p_y.x());               // roll
+  controlAngleThrust.axes.push_back(desired_r_p_y.y());               // pitch
+  controlAngleThrust.axes.push_back(command.collective_thrust);       // thrust
+  controlAngleThrust.axes.push_back(config.kyaw * desired_r_p_y.z()); // yawRate
 
-    ctrlAngleThrust.publish(controlAngleThrust);
+  ctrlAngleThrust.publish(controlAngleThrust);
 }
 
-
 Eigen::Vector3d HappyMoonControl::computePIDErrorAcc(
-                const QuadStateEstimateData& state_estimate,
-                    const QuadStateReferenceData& reference_state,
-                        const PositionControllerParams& config){
+    const QuadStateEstimateData &state_estimate,
+    const QuadStateReferenceData &reference_state,
+    const PositionControllerParams &config) {
   // Compute the desired accelerations due to control errors in world frame
   // with a PID controller
   Eigen::Vector3d acc_error;
@@ -133,39 +147,33 @@ Eigen::Vector3d HappyMoonControl::computePIDErrorAcc(
   // x acceleration
   double x_pos_error =
       reference_state.position.x() - state_estimate.position.x();
-  mathcommon_.limit(&x_pos_error, -config.pxy_error_max,
-                          config.pxy_error_max);
+  mathcommon_.limit(&x_pos_error, -config.pxy_error_max, config.pxy_error_max);
 
   double x_vel_error =
       reference_state.velocity.x() - state_estimate.velocity.x();
-  mathcommon_.limit(&x_vel_error, -config.vxy_error_max,
-                          config.vxy_error_max);
+  mathcommon_.limit(&x_vel_error, -config.vxy_error_max, config.vxy_error_max);
 
   acc_error.x() = config.kpxy * x_pos_error + config.kdxy * x_vel_error;
 
   // y acceleration
   double y_pos_error =
       reference_state.position.y() - state_estimate.position.y();
-  mathcommon_.limit(&y_pos_error, -config.pxy_error_max,
-                          config.pxy_error_max);
+  mathcommon_.limit(&y_pos_error, -config.pxy_error_max, config.pxy_error_max);
 
   double y_vel_error =
       reference_state.velocity.y() - state_estimate.velocity.y();
-  mathcommon_.limit(&y_vel_error, -config.vxy_error_max,
-                          config.vxy_error_max);
+  mathcommon_.limit(&y_vel_error, -config.vxy_error_max, config.vxy_error_max);
 
   acc_error.y() = config.kpxy * y_pos_error + config.kdxy * y_vel_error;
 
   // z acceleration
   double z_pos_error =
       reference_state.position.z() - state_estimate.position.z();
-  mathcommon_.limit(&z_pos_error, -config.pz_error_max,
-                          config.pz_error_max);
+  mathcommon_.limit(&z_pos_error, -config.pz_error_max, config.pz_error_max);
 
   double z_vel_error =
       reference_state.velocity.z() - state_estimate.velocity.z();
-  mathcommon_.limit(&z_vel_error, -config.vz_error_max,
-                          config.vz_error_max);
+  mathcommon_.limit(&z_vel_error, -config.vz_error_max, config.vz_error_max);
 
   acc_error.z() = config.kpz * z_pos_error + config.kdz * z_vel_error;
 
@@ -173,9 +181,9 @@ Eigen::Vector3d HappyMoonControl::computePIDErrorAcc(
 }
 
 double HappyMoonControl::computeDesiredCollectiveMassNormalizedThrust(
-    const Eigen::Quaterniond& attitude_estimate,
-    const Eigen::Vector3d& desired_acc,
-    const PositionControllerParams& config){
+    const Eigen::Quaterniond &attitude_estimate,
+    const Eigen::Vector3d &desired_acc,
+    const PositionControllerParams &config) {
   const Eigen::Vector3d body_z_axis =
       attitude_estimate * Eigen::Vector3d::UnitZ();
 
@@ -187,8 +195,8 @@ double HappyMoonControl::computeDesiredCollectiveMassNormalizedThrust(
 }
 
 Eigen::Quaterniond HappyMoonControl::computeDesiredAttitude(
-    const Eigen::Vector3d& desired_acceleration, const double reference_heading,
-    const Eigen::Quaterniond& attitude_estimate) {
+    const Eigen::Vector3d &desired_acceleration, const double reference_heading,
+    const Eigen::Quaterniond &attitude_estimate) {
   const Eigen::Quaterniond q_heading = Eigen::Quaterniond(
       Eigen::AngleAxisd(reference_heading, Eigen::Vector3d::UnitZ()));
 
@@ -221,9 +229,8 @@ Eigen::Quaterniond HappyMoonControl::computeDesiredAttitude(
 }
 
 Eigen::Vector3d HappyMoonControl::computeRobustBodyXAxis(
-    const Eigen::Vector3d& x_B_prototype, const Eigen::Vector3d& x_C,
-    const Eigen::Vector3d& y_C,
-    const Eigen::Quaterniond& attitude_estimate) {
+    const Eigen::Vector3d &x_B_prototype, const Eigen::Vector3d &x_C,
+    const Eigen::Vector3d &y_C, const Eigen::Quaterniond &attitude_estimate) {
   Eigen::Vector3d x_B = x_B_prototype;
 
   if (almostZero(x_B.norm())) {
@@ -264,10 +271,6 @@ bool HappyMoonControl::almostZeroThrust(const double thrust_value) {
   return fabs(thrust_value) < kAlmostZeroThrustThreshold_;
 }
 
+HappyMoonControl::~HappyMoonControl() {}
 
-HappyMoonControl::~HappyMoonControl()
-{
-}
-
-}
-
+} // namespace happymoon_control

@@ -24,11 +24,13 @@ bool DjiRos::initPublisher(ros::NodeHandle &nh) {
 
   velocity_publisher = nh.advertise<geometry_msgs::Vector3Stamped>("velo", 10);
 
-  from_mobile_data_publisher = nh.advertise<dji_sdk::MobileData>("from_mobile_data", 10);
+  from_mobile_data_publisher =
+      nh.advertise<dji_sdk::MobileData>("from_mobile_data", 10);
 
-  gimbal_angle_publisher = nh.advertise<geometry_msgs::Vector3Stamped>("gimbal_angle", 10);
+  gimbal_angle_publisher =
+      nh.advertise<geometry_msgs::Vector3Stamped>("gimbal_angle", 10);
 
-//    ACK::ErrorCode broadcast_set_freq_ack;
+  //    ACK::ErrorCode broadcast_set_freq_ack;
 
   if (telemetry_from_fc == USE_BROADCAST) {
     ROS_ASSERT_MSG(false, "Broadcast not supported!");
@@ -55,7 +57,8 @@ bool DjiRos::initPublisher(ros::NodeHandle &nh) {
       return false;
     }
   }
-  vehicle->moc->setFromMSDKCallback(&DJISDKNode::SDKfromMobileDataCallback, this);
+  vehicle->moc->setFromMSDKCallback(&DJISDKNode::SDKfromMobileDataCallback,
+                                    this);
   return true;
 };
 
@@ -69,8 +72,8 @@ bool DjiRos::initDataSubscribeFromFC() {
   Telemetry::TopicName topicList400Hz[] = {Telemetry::TOPIC_HARD_SYNC};
   int nTopic400Hz = sizeof(topicList400Hz) / sizeof(topicList400Hz[0]);
   int packageID400Hz = 0;
-  if (vehicle->subscribe->initPackageFromTopicList(
-      packageID400Hz, nTopic400Hz, topicList400Hz, 0, 400)) {
+  if (vehicle->subscribe->initPackageFromTopicList(packageID400Hz, nTopic400Hz,
+                                                   topicList400Hz, 0, 400)) {
     ack = vehicle->subscribe->startPackage(packageID400Hz, WAIT_TIMEOUT);
     if (ACK::getError(ack)) {
       vehicle->subscribe->removePackage(packageID400Hz, WAIT_TIMEOUT);
@@ -83,24 +86,23 @@ bool DjiRos::initDataSubscribeFromFC() {
   }
 
   // 50 Hz package from FC
-  Telemetry::TopicName topicList50Hz[] = {Telemetry::TOPIC_VELOCITY,
-                                          Telemetry::TOPIC_GPS_FUSED,
-                                          Telemetry::TOPIC_HEIGHT_FUSION,
-                                          Telemetry::TOPIC_STATUS_FLIGHT,
-                                          Telemetry::TOPIC_STATUS_DISPLAYMODE,
-//                                            Telemetry::TOPIC_GPS_DATE,
-//                                            Telemetry::TOPIC_GPS_TIME,
-//                                            Telemetry::TOPIC_GPS_POSITION,
-//                                            Telemetry::TOPIC_GPS_VELOCITY,
-//                                            Telemetry::TOPIC_GPS_DETAILS,
-                                          Telemetry::TOPIC_GIMBAL_ANGLES,
-//                                            Telemetry::TOPIC_GIMBAL_STATUS,
-                                          Telemetry::TOPIC_RC};
+  Telemetry::TopicName topicList50Hz[] = {
+      Telemetry::TOPIC_VELOCITY, Telemetry::TOPIC_GPS_FUSED,
+      Telemetry::TOPIC_HEIGHT_FUSION, Telemetry::TOPIC_STATUS_FLIGHT,
+      Telemetry::TOPIC_STATUS_DISPLAYMODE,
+      //                                            Telemetry::TOPIC_GPS_DATE,
+      //                                            Telemetry::TOPIC_GPS_TIME,
+      //                                            Telemetry::TOPIC_GPS_POSITION,
+      //                                            Telemetry::TOPIC_GPS_VELOCITY,
+      //                                            Telemetry::TOPIC_GPS_DETAILS,
+      Telemetry::TOPIC_GIMBAL_ANGLES,
+      //                                            Telemetry::TOPIC_GIMBAL_STATUS,
+      Telemetry::TOPIC_RC};
   int nTopic50Hz = sizeof(topicList50Hz) / sizeof(topicList50Hz[0]);
   int packageID50Hz = 1;
 
-  if (vehicle->subscribe->initPackageFromTopicList(
-      packageID50Hz, nTopic50Hz, topicList50Hz, 0, 50)) {
+  if (vehicle->subscribe->initPackageFromTopicList(packageID50Hz, nTopic50Hz,
+                                                   topicList50Hz, 0, 50)) {
     ack = vehicle->subscribe->startPackage(packageID50Hz, WAIT_TIMEOUT);
     if (ACK::getError(ack)) {
       vehicle->subscribe->removePackage(packageID50Hz, WAIT_TIMEOUT);
@@ -108,14 +110,13 @@ bool DjiRos::initDataSubscribeFromFC() {
       return false;
     } else {
       vehicle->subscribe->registerUserPackageUnpackCallback(
-          packageID50Hz, DjiRos::onReceive50HzData, (UserData) this);
+          packageID50Hz, DjiRos::onReceive50HzData, (UserData)this);
     }
   }
   return true;
 }
 
-template<typename T>
-bool validate_answer(const T &ans) {
+template <typename T> bool validate_answer(const T &ans) {
   const uint8_t *p = reinterpret_cast<const uint8_t *>(&ans);
   bool invalid = true;
 
@@ -126,19 +127,19 @@ bool validate_answer(const T &ans) {
   return !invalid;
 }
 
-void DjiRos::onReceive50HzData(Vehicle *vehicle,
-                               RecvContainer recvFrame,
+void DjiRos::onReceive50HzData(Vehicle *vehicle, RecvContainer recvFrame,
                                DJI::OSDK::UserData userData) {
-  DjiRos *p = (DjiRos *) userData;
+  DjiRos *p = (DjiRos *)userData;
 
   ros::Time msg_stamp = p->aligner.acquire_latest_stamp();
 
-  do {   // Velocity
+  do { // Velocity
     Telemetry::TypeMap<Telemetry::TOPIC_VELOCITY>::type vel =
         vehicle->subscribe->getValue<Telemetry::TOPIC_VELOCITY>();
     geometry_msgs::Vector3Stamped velo_msg;
 
-    if (!validate_answer(vel)) break;
+    if (!validate_answer(vel))
+      break;
 
     if (vel.info.health) {
       velo_msg.header.stamp = msg_stamp;
@@ -150,13 +151,14 @@ void DjiRos::onReceive50HzData(Vehicle *vehicle,
     }
   } while (0);
 
-  do {   // GPS
+  do { // GPS
     Telemetry::TypeMap<Telemetry::TOPIC_GPS_FUSED>::type latlong =
         vehicle->subscribe->getValue<Telemetry::TOPIC_GPS_FUSED>();
     Telemetry::TypeMap<Telemetry::TOPIC_HEIGHT_FUSION>::type height =
         vehicle->subscribe->getValue<Telemetry::TOPIC_HEIGHT_FUSION>();
 
-    if (!validate_answer(latlong) || !validate_answer(height)) break;
+    if (!validate_answer(latlong) || !validate_answer(height))
+      break;
 
     sensor_msgs::NavSatFix gps_msg;
     gps_msg.header.frame_id = "NED";
@@ -173,7 +175,8 @@ void DjiRos::onReceive50HzData(Vehicle *vehicle,
     Telemetry::TypeMap<Telemetry::TOPIC_STATUS_FLIGHT>::type fs =
         vehicle->subscribe->getValue<Telemetry::TOPIC_STATUS_FLIGHT>();
 
-    if (!validate_answer(fs)) break;
+    if (!validate_answer(fs))
+      break;
 
     std_msgs::UInt8 flight_status;
     flight_status.data = fs;
@@ -184,7 +187,8 @@ void DjiRos::onReceive50HzData(Vehicle *vehicle,
     Telemetry::TypeMap<Telemetry::TOPIC_GIMBAL_ANGLES>::type gimbal_angle =
         vehicle->subscribe->getValue<Telemetry::TOPIC_GIMBAL_ANGLES>();
 
-    if (!validate_answer(gimbal_angle)) break;
+    if (!validate_answer(gimbal_angle))
+      break;
 
     geometry_msgs::Vector3Stamped gimbal_angle_vec3;
     gimbal_angle_vec3.header.stamp = msg_stamp;
@@ -198,7 +202,8 @@ void DjiRos::onReceive50HzData(Vehicle *vehicle,
     Telemetry::TypeMap<Telemetry::TOPIC_STATUS_DISPLAYMODE>::type dm =
         vehicle->subscribe->getValue<Telemetry::TOPIC_STATUS_DISPLAYMODE>();
 
-    if (!validate_answer(dm)) break;
+    if (!validate_answer(dm))
+      break;
 
     std_msgs::UInt8 status_dm;
     status_dm.data = dm;
@@ -209,7 +214,8 @@ void DjiRos::onReceive50HzData(Vehicle *vehicle,
     Telemetry::TypeMap<Telemetry::TOPIC_RC>::type rc =
         vehicle->subscribe->getValue<Telemetry::TOPIC_RC>();
 
-    if (!validate_answer(rc)) break;
+    if (!validate_answer(rc))
+      break;
 
     sensor_msgs::Joy rc_joy;
     rc_joy.header.stamp = msg_stamp;
@@ -229,17 +235,17 @@ void DjiRos::onReceive50HzData(Vehicle *vehicle,
   } while (0);
 }
 
-void DjiRos::onReceive400HzData(Vehicle *vehicle,
-                                RecvContainer recvFrame,
+void DjiRos::onReceive400HzData(Vehicle *vehicle, RecvContainer recvFrame,
                                 DJI::OSDK::UserData userData) {
-  DjiRos *p = (DjiRos *) userData;
+  DjiRos *p = (DjiRos *)userData;
 
   Telemetry::TypeMap<Telemetry::TOPIC_HARD_SYNC>::type hs_data =
       vehicle->subscribe->getValue<Telemetry::TOPIC_HARD_SYNC>();
 
   sensor_msgs::Imu imu_msg;
 
-  bool aligned = p->aligner.acquire_stamp(imu_msg.header.stamp, hs_data.ts.time2p5ms);
+  bool aligned =
+      p->aligner.acquire_stamp(imu_msg.header.stamp, hs_data.ts.time2p5ms);
 
   if (!aligned)
     return;
@@ -247,8 +253,10 @@ void DjiRos::onReceive400HzData(Vehicle *vehicle,
   imu_msg.header.frame_id = std::string("FLU");
 
   // transform to ROS REP 103 Convention
-  Eigen::Quaterniond q_fc(hs_data.q.q0, hs_data.q.q1, hs_data.q.q2, hs_data.q.q3);
-  Eigen::Quaterniond q_ros(p->ros_R_fc * q_fc.toRotationMatrix() * p->ros_R_fc.transpose());
+  Eigen::Quaterniond q_fc(hs_data.q.q0, hs_data.q.q1, hs_data.q.q2,
+                          hs_data.q.q3);
+  Eigen::Quaterniond q_ros(p->ros_R_fc * q_fc.toRotationMatrix() *
+                           p->ros_R_fc.transpose());
 
   imu_msg.orientation.w = q_ros.w();
   imu_msg.orientation.x = q_ros.x();
@@ -280,6 +288,6 @@ void DjiRos::onReceive400HzData(Vehicle *vehicle,
     p->m_hwsync_ack_count++;
   }
 
-  //  ROS_INFO("Sync: f[%d] idx[%d] tick[%d]", hs_data.ts.flag, hs_data.ts.index,
-  //  hs_data.ts.time2p5ms);
+  //  ROS_INFO("Sync: f[%d] idx[%d] tick[%d]", hs_data.ts.flag,
+  //  hs_data.ts.index, hs_data.ts.time2p5ms);
 }
