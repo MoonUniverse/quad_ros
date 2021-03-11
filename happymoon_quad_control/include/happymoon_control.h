@@ -25,6 +25,7 @@
 
 #include <eigen3/Eigen/Dense>
 
+#include "control_data_arbiter.h"
 #include "geometry_eigen_conversions.h"
 #include "math_common.h"
 
@@ -53,6 +54,11 @@ struct HappymoonReference {
   double heading;
   double heading_rate;
 };
+
+typedef enum {
+  JOY_STICK_PRIO_IDX = 0,
+  NAV_PRIO_IDX,
+} enPriorityIdx;
 
 struct PositionControllerParams {
   double kpxy; // [1/s^2]
@@ -98,6 +104,7 @@ public:
   ~HappyMoonControl();
 
 private:
+  boost::shared_ptr<happymoon_control::ControlDataArbiter> ctrl_arbiter_ptr_;
   void joyStickCallback(const sensor_msgs::Joy::ConstPtr &joy);
   void stateEstimateCallback(const nav_msgs::Odometry::ConstPtr &msg);
   Eigen::Vector3d geometryToEigen(const geometry_msgs::Point &vec_ros);
@@ -126,8 +133,12 @@ private:
                          const double reference_heading,
                          const Eigen::Quaterniond &attitude_estimate);
 
+  void setZeroCtrl(djiFlightControl *ctrl_msg);
+
   bool almostZero(const double value);
   bool almostZeroThrust(const double thrust_value);
+
+  void runBehavior(void);
 
   ros::Publisher ctrlAngleThrust;
 
@@ -135,6 +146,7 @@ private:
   ros::Subscriber vision_odom;
 
   mutable std::mutex main_mutex_;
+  std::thread *run_behavior_thread_;
 
   ros::Time timestamp;
 
@@ -145,6 +157,8 @@ private:
   GeometryEigenConversions geometryToEigen_;
   MathCommon mathcommon_;
   PositionControllerParams happymoonconfig_;
+
+  sensor_msgs::Joy ctrlDjiFlightData;
 
   // Constants
   const Eigen::Vector3d kGravity_ = Eigen::Vector3d(0.0, 0.0, -9.81);

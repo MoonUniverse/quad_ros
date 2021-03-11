@@ -22,6 +22,7 @@ HappyMoonControl::HappyMoonControl() {
   nh.param("vz_error_max", happymoon_config.vz_error_max, 0.0);
   nh.param("yaw_error_max", happymoon_config.yaw_error_max, 0.0);
 
+  ctrl_arbiter_ptr_.reset(new ControlDataArbiter());
   // Publish the control signal
   ctrlAngleThrust = nh.advertise<sensor_msgs::Joy>("/djiros/ctrl", 10);
   // Subcribe the control signal
@@ -35,24 +36,60 @@ HappyMoonControl::HappyMoonControl() {
       "/vins_estimator/imu_propagate", 10,
       boost::bind(&HappyMoonControl::stateEstimateCallback, this, _1),
       ros::VoidConstPtr(), ros::TransportHints().tcpNoDelay());
+
+  run_behavior_thread_ =
+      new std::thread(std::bind(&HappyMoonControl::runBehavior, this));
+}
+
+void HappyMoonControl::runBehavior(void) {
+  ros::NodeHandle n;
+  ros::Rate rate(50.0);
+  while (n.ok()) {
+    djiFlightControl flight_ctrl;
+    uint32_t ctrl_priority = 0;
+    if (!ctrl_arbiter_ptr_->getHighestPriorityCtrl(&ctrl_priority,
+                                                   &flight_ctrl)) {
+      setZeroCtrl(&flight_ctrl);
+    }
+
+    sensor_msgs::Joy ctrlAngleThrustData;
+    ctrlAngleThrustData.header.stamp = ros::Time::now();
+    ctrlAngleThrustData.header.frame_id = std::string("FRD");
+    ctrlAngleThrustData.axes.push_back(flight_ctrl.pitch);   // roll
+    ctrlAngleThrustData.axes.push_back(flight_ctrl.roll);    // pitch
+    ctrlAngleThrustData.axes.push_back(flight_ctrl.thrust);  // thrust
+    ctrlAngleThrustData.axes.push_back(flight_ctrl.yawrate); // yawRate
+    ctrlAngleThrust.publish(ctrlAngleThrustData);
+
+    rate.sleep();
+  }
 }
 
 void HappyMoonControl::joyStickCallback(const sensor_msgs::Joy::ConstPtr &joy) {
+  djiFlightControl joy_ctrl;
+
+  joy_ctrl.pitch = 0;
+  joy_ctrl.roll = 0;
+  joy_ctrl.thrust = 0;
+  joy_ctrl.yawrate = 0;
   if (joy == nullptr) {
     return;
   }
-  sensor_msgs::Joy ctrlAngleThrustData;
-  ctrlAngleThrustData.header.stamp = ros::Time::now();
-  ctrlAngleThrustData.header.frame_id = std::string("FRD");
-  ctrlAngleThrustData.axes.push_back(joy->axes[3] * 10); // roll    0 - 10 deg
-  ctrlAngleThrustData.axes.push_back(joy->axes[4] * 10); // pitch   0 - 10 deg
-  ctrlAngleThrustData.axes.push_back((joy->axes[1] + 1.0) *
-                                     25); // thrust  0 - 50 thrust
-  ctrlAngleThrustData.axes.push_back(-joy->axes[0] * 50); // yawRate 0 - 50 deg
-
-  ctrlAngleThrust.publish(ctrlAngleThrustData);
-  ROS_INFO("roll:%f,pitch:%f,THRUST:%f,YawRate:%f", -joy->axes[3] * 10,
-           joy->axes[4] * 10, (joy->axes[1] + 1.0) / 2, joy->axes[0]);
+  if ((0 == joy->buttons[0]) && (0 == joy->buttons[2])) {
+    ctrl_arbiter_ptr_->setActiveFlagByPriority(JOY_STICK_PRIO_IDX, false);
+    ctrl_arbiter_ptr_->setCtrlByPriority(JOY_STICK_PRIO_IDX, &joy_ctrl);
+    return;
+  }
+  if (1 == joy->buttons[0]) {
+    joy_ctrl.pitch = joy->axes[3] * 10;
+    joy_ctrl.roll = joy->axes[4] * 10;
+    joy_ctrl.thrust = (joy->axes[1] + 1.0) * 25;
+    joy_ctrl.yawrate = -joy->axes[0] * 50;
+    ROS_INFO("roll:%f,pitch:%f,THRUST:%f,YawRate:%f", -joy->axes[3] * 10,
+             joy->axes[4] * 10, (joy->axes[1] + 1.0) * 25, joy->axes[0] * 50);
+    ctrl_arbiter_ptr_->setActiveFlagByPriority(JOY_STICK_PRIO_IDX, true);
+    ctrl_arbiter_ptr_->setCtrlByPriority(JOY_STICK_PRIO_IDX, &joy_ctrl);
+  }
 }
 
 void HappyMoonControl::stateEstimateCallback(
@@ -127,13 +164,15 @@ void HappyMoonControl::ControlRun(const QuadStateEstimateData &state_estimate,
   const Eigen::Vector3d desired_r_p_y =
       mathcommon_.quaternionToEulerAnglesZYX(desired_attitude);
 
-  sensor_msgs::Joy controlAngleThrust;
-  controlAngleThrust.axes.push_back(desired_r_p_y.x());               // roll
-  controlAngleThrust.axes.push_back(desired_r_p_y.y());               // pitch
-  controlAngleThrust.axes.push_back(command.collective_thrust);       // thrust
-  controlAngleThrust.axes.push_back(config.kyaw * desired_r_p_y.z()); // yawRate
-
-  ctrlAngleThrust.publish(controlAngleThrust);
+  djiFlightControl nav_ctrl;
+  nav_ctrl.pitch = desired_r_p_y.x();
+  nav_ctrl.roll = desired_r_p_y.y();
+  nav_ctrl.thrust = command.collective_thrust;
+  nav_ctrl.yawrate = config.kyaw * desired_r_p_y.z();
+  ROS_INFO("roll:%f,pitch:%f,THRUST:%f,YawRate:%f", nav_ctrl.pitch,
+           nav_ctrl.roll, nav_ctrl.thrust, nav_ctrl.yawrate);
+  ctrl_arbiter_ptr_->setActiveFlagByPriority(NAV_PRIO_IDX, true);
+  ctrl_arbiter_ptr_->setCtrlByPriority(NAV_PRIO_IDX, &nav_ctrl);
 }
 
 Eigen::Vector3d HappyMoonControl::computePIDErrorAcc(
@@ -261,6 +300,16 @@ Eigen::Vector3d HappyMoonControl::computeRobustBodyXAxis(
   //  }
 
   return x_B;
+}
+
+void HappyMoonControl::setZeroCtrl(djiFlightControl *ctrl_msg) {
+  if (ctrl_msg == nullptr) {
+    return;
+  }
+  ctrl_msg->pitch = 0;
+  ctrl_msg->roll = 0;
+  ctrl_msg->thrust = 10;
+  ctrl_msg->yawrate = 0;
 }
 
 bool HappyMoonControl::almostZero(const double value) {

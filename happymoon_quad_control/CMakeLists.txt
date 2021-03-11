@@ -52,11 +52,11 @@ target_link_libraries(geometry_eigen_conversions        ${catkin_LIBRARIES})
 add_library(math_common           src/math_common.cpp)
 target_link_libraries(math_common        ${catkin_LIBRARIES})
 
-# add_library(dji_n3_control      src/dji_n3_control.cpp)
-# target_link_libraries(dji_n3_control        ${catkin_LIBRARIES} ${DJIOSDK_LIBRARIES})
+add_library(control_data_arbiter      src/control_data_arbiter.cpp)
+target_link_libraries(control_data_arbiter        ${catkin_LIBRARIES})
 
 add_library(happymoon_control      src/happymoon_control.cpp)
-target_link_libraries(happymoon_control       ${catkin_LIBRARIES} geometry_eigen_conversions math_common)
+target_link_libraries(happymoon_control       ${catkin_LIBRARIES} geometry_eigen_conversions math_common control_data_arbiter)
 
 # Declare a C++ executable
 add_executable(happymoon_quad_control_node     src/happymoon_quad_control_node.cpp)
