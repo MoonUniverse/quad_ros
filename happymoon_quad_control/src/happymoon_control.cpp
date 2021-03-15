@@ -35,18 +35,15 @@ HappyMoonControl::HappyMoonControl() {
   joy_cmd = nh.subscribe<sensor_msgs::Joy>(
       "/joy", 10, boost::bind(&HappyMoonControl::joyStickCallback, this, _1));
   // Subcribe the reference signal
-  // reference_state =
-  // nh.subscribe<geometry_msgs::PoseWithCovarianceStamped>(""); Subcribe the
+  server_cmd = nh.subscribe<std_msgs::String>(
+      "/happymoon/server_cmd", 10,
+      boost::bind(&HappyMoonControl::serverCmdCallback, this, _1));
   // VIO nav msg
   vision_odom = nh.subscribe<nav_msgs::Odometry>(
       "/vins_estimator/imu_propagate", 10,
       boost::bind(&HappyMoonControl::stateEstimateCallback, this, _1),
       ros::VoidConstPtr(), ros::TransportHints().tcpNoDelay());
-
-  server_cmd = nh.subscribe<std_msgs::String>(
-      "/happymoon/server_cmd", 10,
-      boost::bind(&HappyMoonControl::serverCmdCallback, this, _1));
-
+  // thread
   run_behavior_thread_ =
       new std::thread(std::bind(&HappyMoonControl::runBehavior, this));
 }
