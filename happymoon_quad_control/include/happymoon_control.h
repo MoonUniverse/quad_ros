@@ -17,6 +17,7 @@
 #include <nav_msgs/Odometry.h>
 #include <ros/ros.h>
 #include <sensor_msgs/Joy.h>
+#include <std_msgs/String.h>
 #include <std_msgs/UInt8.h>
 #include <tf/tf.h>
 
@@ -106,6 +107,7 @@ public:
 private:
   boost::shared_ptr<happymoon_control::ControlDataArbiter> ctrl_arbiter_ptr_;
   void joyStickCallback(const sensor_msgs::Joy::ConstPtr &joy);
+  void serverCmdCallback(const std_msgs::String::ConstPtr &msg);
   void stateEstimateCallback(const nav_msgs::Odometry::ConstPtr &msg);
   Eigen::Vector3d geometryToEigen(const geometry_msgs::Point &vec_ros);
   QuadStateReferenceData QuadReferenceState(HappymoonReference ref_msg,
@@ -143,6 +145,7 @@ private:
   ros::Publisher ctrlAngleThrust;
 
   ros::Subscriber joy_cmd;
+  ros::Subscriber server_cmd;
   ros::Subscriber vision_odom;
 
   mutable std::mutex main_mutex_;

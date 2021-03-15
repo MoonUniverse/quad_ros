@@ -43,6 +43,10 @@ HappyMoonControl::HappyMoonControl() {
       boost::bind(&HappyMoonControl::stateEstimateCallback, this, _1),
       ros::VoidConstPtr(), ros::TransportHints().tcpNoDelay());
 
+  server_cmd = nh.subscribe<std_msgs::String>(
+      "/happymoon/server_cmd", 10,
+      boost::bind(&HappyMoonControl::serverCmdCallback, this, _1));
+
   run_behavior_thread_ =
       new std::thread(std::bind(&HappyMoonControl::runBehavior, this));
 }
@@ -95,6 +99,37 @@ void HappyMoonControl::joyStickCallback(const sensor_msgs::Joy::ConstPtr &joy) {
              joy->axes[4] * 10, (joy->axes[1] + 1.0) * 25, joy->axes[0] * 50);
     ctrl_arbiter_ptr_->setActiveFlagByPriority(JOY_STICK_PRIO_IDX, true);
     ctrl_arbiter_ptr_->setCtrlByPriority(JOY_STICK_PRIO_IDX, &joy_ctrl);
+  }
+}
+
+void HappyMoonControl::serverCmdCallback(
+    const std_msgs::String::ConstPtr &msg) {
+  if (msg == nullptr) {
+    return;
+  }
+  std_msgs::String cmd_str = *msg;
+  if (cmd_str.data.find("StartMove:") != std::string::npos) {
+    std::string param_str;
+    param_str = cmd_str.data.substr(10, cmd_str.data.length() - 10);
+    std::vector<std::string> params;
+    std::istringstream param_stream(param_str);
+    std::string param;
+    while (getline(param_stream, param, ',')) {
+      params.push_back(param);
+    }
+    if (params.size() == 5) {
+      ROS_INFO("pos_x: %s, pos_y: %s, pos_z: %s, head: %s, head_rate: %s",
+               params[0].c_str(), params[1].c_str(), params[2].c_str(),
+               params[3].c_str(), params[4].c_str());
+      happymoon_reference.position.x() = atof(params[0].c_str());
+      happymoon_reference.position.y() = atof(params[1].c_str());
+      happymoon_reference.position.z() = atof(params[2].c_str());
+      happymoon_reference.heading = atof(params[3].c_str());
+      happymoon_reference.heading_rate = atof(params[4].c_str());
+    } else {
+      ROS_ERROR("Param error!");
+      return;
+    }
   }
 }
 
