@@ -21,3 +21,9 @@ k_drag_x: 0.0
 k_drag_y: 0.0
 k_drag_z: 0.0
 k_thrust_horz: 0.0
+
+ref_pos_x: 0.0
+ref_pos_y: 0.0
+ref_pos_z: 1.0
+ref_head: 0.0
+ref_head_rate: 0.0

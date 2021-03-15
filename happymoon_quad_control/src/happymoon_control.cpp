@@ -22,6 +22,12 @@ HappyMoonControl::HappyMoonControl() {
   nh.param("vz_error_max", happymoon_config.vz_error_max, 0.0);
   nh.param("yaw_error_max", happymoon_config.yaw_error_max, 0.0);
 
+  nh.param("ref_pos_x", happymoon_reference.position.x(), 0.0);
+  nh.param("ref_pos_y", happymoon_reference.position.y(), 0.0);
+  nh.param("ref_pos_z", happymoon_reference.position.z(), 1.0);
+  nh.param("ref_head", happymoon_reference.heading, 0.0);
+  nh.param("ref_head_rate", happymoon_reference.heading_rate, 0.0);
+
   ctrl_arbiter_ptr_.reset(new ControlDataArbiter());
   // Publish the control signal
   ctrlAngleThrust = nh.advertise<sensor_msgs::Joy>("/djiros/ctrl", 10);
@@ -43,7 +49,7 @@ HappyMoonControl::HappyMoonControl() {
 
 void HappyMoonControl::runBehavior(void) {
   ros::NodeHandle n;
-  ros::Rate rate(50.0);
+  ros::Rate rate(100.0);
   while (n.ok()) {
     djiFlightControl flight_ctrl;
     uint32_t ctrl_priority = 0;
