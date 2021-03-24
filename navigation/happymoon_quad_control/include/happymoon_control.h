@@ -23,6 +23,7 @@
 
 #include <boost/algorithm/string.hpp>
 #include <boost/thread.hpp>
+#include <happymoon_quad_control/TofsenseFrame0.h>
 
 #include <eigen3/Eigen/Dense>
 
@@ -109,6 +110,8 @@ private:
   void joyStickCallback(const sensor_msgs::Joy::ConstPtr &joy);
   void serverCmdCallback(const std_msgs::String::ConstPtr &msg);
   void stateEstimateCallback(const nav_msgs::Odometry::ConstPtr &msg);
+  void
+  tofSenseCallback(const happymoon_quad_control::TofsenseFrame0::ConstPtr &msg);
   Eigen::Vector3d geometryToEigen(const geometry_msgs::Point &vec_ros);
   QuadStateReferenceData QuadReferenceState(HappymoonReference ref_msg,
                                             QuadStateEstimateData est_msg);
@@ -147,6 +150,7 @@ private:
   ros::Subscriber joy_cmd;
   ros::Subscriber server_cmd;
   ros::Subscriber vision_odom;
+  ros::Subscriber tofsense_dis;
 
   mutable std::mutex main_mutex_;
   std::thread *run_behavior_thread_;
@@ -162,6 +166,7 @@ private:
   PositionControllerParams happymoonconfig_;
 
   sensor_msgs::Joy ctrlDjiFlightData;
+  float height_dis;
 
   // Constants
   const Eigen::Vector3d kGravity_ = Eigen::Vector3d(0.0, 0.0, -9.81);

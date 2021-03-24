@@ -15,11 +15,24 @@ find_package(catkin REQUIRED COMPONENTS
   std_srvs
   tf
   tf2
+  message_generation
 )
 find_package(yaml-cpp REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(Ceres REQUIRED)
 
+
+## Generate messages in the 'msg' folder
+add_message_files(
+    FILES
+    TofsenseFrame0.msg
+    )
+
+## Generate added messages and services with any dependencies listed here
+generate_messages(
+    DEPENDENCIES
+    std_msgs
+    )
 ###################################
 ## catkin specific configuration ##
 ###################################
@@ -31,7 +44,7 @@ find_package(Ceres REQUIRED)
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
   INCLUDE_DIRS include
-  CATKIN_DEPENDS roscpp geometry_msgs sensor_msgs std_msgs std_srvs tf tf2
+  CATKIN_DEPENDS roscpp geometry_msgs sensor_msgs std_msgs std_srvs tf tf2 message_runtime
 )
 
 ###########

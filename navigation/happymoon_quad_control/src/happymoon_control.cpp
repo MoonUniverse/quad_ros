@@ -43,6 +43,10 @@ HappyMoonControl::HappyMoonControl() {
       "/vins_estimator/imu_propagate", 10,
       boost::bind(&HappyMoonControl::stateEstimateCallback, this, _1),
       ros::VoidConstPtr(), ros::TransportHints().tcpNoDelay());
+  // TofSense msg sub
+  tofsense_dis = nh.subscribe<happymoon_quad_control::TofsenseFrame0>(
+      "/joy", 10, boost::bind(&HappyMoonControl::tofSenseCallback, this, _1));
+
   // thread
   run_behavior_thread_ =
       new std::thread(std::bind(&HappyMoonControl::runBehavior, this));
@@ -70,6 +74,15 @@ void HappyMoonControl::runBehavior(void) {
 
     rate.sleep();
   }
+}
+
+void HappyMoonControl::tofSenseCallback(
+    const happymoon_quad_control::TofsenseFrame0::ConstPtr &msg) {
+  if (msg == nullptr) {
+    return;
+  }
+  height_dis = msg->dis;
+  ROS_INFO("Current quad height: %f", height_dis);
 }
 
 void HappyMoonControl::joyStickCallback(const sensor_msgs::Joy::ConstPtr &joy) {
