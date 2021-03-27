@@ -5,7 +5,7 @@
 imu: 1         
 num_of_cam: 2  
 
-imu_topic: "/dji_sdk/imu"
+imu_topic: "/djiros/imu"
 image0_topic: "/camera/infra1/image_rect_raw"
 image1_topic: "/camera/infra2/image_rect_raw"
 output_path: ""
@@ -17,7 +17,7 @@ image_height: 480
    
 
 # Extrinsic parameter between IMU and Camera.
-estimate_extrinsic: 1   # 0  Have an accurate extrinsic parameters. We will trust the following imu^R_cam, imu^T_cam, don't change it.
+estimate_extrinsic: 0   # 0  Have an accurate extrinsic parameters. We will trust the following imu^R_cam, imu^T_cam, don't change it.
                         # 1  Have an initial guess about extrinsic parameters. We will optimize around your initial guess.
 
 body_T_cam0: !!opencv-matrix
@@ -33,10 +33,10 @@ body_T_cam1: !!opencv-matrix
    rows: 4
    cols: 4
    dt: d
-   data:    [ 0.02406656, -0.99969619,  0.00532239, -0.03159444
-            -0.26805493, -0.01158192, -0.96333401, -0.01120015
-             0.96310298,  0.02175744, -0.26825223, -0.07372415
-             0.0,          0.0,          0.0,          1.0     ]
+   data:    [ 0.02406656, -0.99969619,  0.00532239, -0.03159444,
+             -0.26805493, -0.01158192, -0.96333401, -0.01120015,
+              0.96310298,  0.02175744, -0.26825223, -0.07372415,
+              0.0,          0.0,          0.0,          1.0     ]
 
 #Multiple thread support
 multiple_thread: 1
