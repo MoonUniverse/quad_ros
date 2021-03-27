@@ -17,32 +17,32 @@ image_height: 480
    
 
 # Extrinsic parameter between IMU and Camera.
-estimate_extrinsic: 0   # 0  Have an accurate extrinsic parameters. We will trust the following imu^R_cam, imu^T_cam, don't change it.
+estimate_extrinsic: 1   # 0  Have an accurate extrinsic parameters. We will trust the following imu^R_cam, imu^T_cam, don't change it.
                         # 1  Have an initial guess about extrinsic parameters. We will optimize around your initial guess.
 
 body_T_cam0: !!opencv-matrix
    rows: 4
    cols: 4
    dt: d
-   data:    [ 0.00399378, -0.99995597,  0.00849164,  0.01927662,
-             -0.26720005, -0.00925007, -0.96359669, -0.0111493, 
-              0.96363281,  0.00157943, -0.26722522, -0.07410791,
+   data:    [ 0.00399378, -0.26720005,  0.96363281,  0.06835673,
+             -0.99995597, -0.00925007,  0.00157943,  0.01928969, 
+              0.00849164, -0.96359669, -0.26722522, -0.03071063,
               0.0,          0.0,          0.0,          1.0     ]
 
 body_T_cam1: !!opencv-matrix
    rows: 4
    cols: 4
    dt: d
-   data:    [ 0.02406656, -0.99969619,  0.00532239, -0.03159444,
-             -0.26805493, -0.01158192, -0.96333401, -0.01120015,
-              0.96310298,  0.02175744, -0.26825223, -0.07372415,
+   data:    [ 0.02406656, -0.26805493,  0.96310298,  0.06876206,
+             -0.99969619, -0.01158192,  0.02175744, -0.03011051,
+              0.00532239, -0.96333401, -0.26825223, -0.03039799,
               0.0,          0.0,          0.0,          1.0     ]
 
 #Multiple thread support
 multiple_thread: 1
 
 #feature traker paprameters
-max_cnt: 120            # max feature number in feature tracking
+max_cnt: 150            # max feature number in feature tracking
 min_dist: 30            # min distance between two features 
 freq: 10                # frequence (Hz) of publish tracking result. At least 10Hz for good estimation. If set 0, the frequence will be same as raw image 
 F_threshold: 1.0        # ransac threshold (pixel)
