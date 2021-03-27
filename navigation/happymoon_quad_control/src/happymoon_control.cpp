@@ -45,7 +45,8 @@ HappyMoonControl::HappyMoonControl() {
       ros::VoidConstPtr(), ros::TransportHints().tcpNoDelay());
   // TofSense msg sub
   tofsense_dis = nh.subscribe<happymoon_quad_control::TofsenseFrame0>(
-      "/joy", 10, boost::bind(&HappyMoonControl::tofSenseCallback, this, _1));
+      "/nlink_tofsense_frame0", 10,
+      boost::bind(&HappyMoonControl::tofSenseCallback, this, _1));
 
   // thread
   run_behavior_thread_ =
