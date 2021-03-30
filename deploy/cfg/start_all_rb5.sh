@@ -11,7 +11,7 @@ sleep 10
 
 echo "djiros starting success!"
 
-roslaunch nlink_parser tofsense.launch
+roslaunch nlink_parser tofsense.launch &
 
 sleep 5
 
