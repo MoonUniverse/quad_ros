@@ -16,6 +16,7 @@
 #include <geometry_msgs/Vector3Stamped.h>
 #include <nav_msgs/Odometry.h>
 #include <ros/ros.h>
+#include <sensor_msgs/Imu.h>
 #include <sensor_msgs/Joy.h>
 #include <std_msgs/String.h>
 #include <std_msgs/UInt8.h>
@@ -112,6 +113,7 @@ private:
   void stateEstimateCallback(const nav_msgs::Odometry::ConstPtr &msg);
   void
   tofSenseCallback(const happymoon_quad_control::TofsenseFrame0::ConstPtr &msg);
+  void djiImuCallback(const sensor_msgs::Imu::ConstPtr &imu_msg);
   Eigen::Vector3d geometryToEigen(const geometry_msgs::Point &vec_ros);
   QuadStateReferenceData QuadReferenceState(HappymoonReference ref_msg,
                                             QuadStateEstimateData est_msg);
@@ -148,6 +150,7 @@ private:
   ros::Publisher ctrlAngleThrust;
 
   ros::Subscriber joy_cmd;
+  ros::Subscriber dji_imu;
   ros::Subscriber server_cmd;
   ros::Subscriber vision_odom;
   ros::Subscriber tofsense_dis;
@@ -166,6 +169,8 @@ private:
   PositionControllerParams happymoonconfig_;
 
   sensor_msgs::Joy ctrlDjiFlightData;
+  sensor_msgs::Imu imu_data;
+  bool stop_quad;
   float height_dis;
 
   // Constants

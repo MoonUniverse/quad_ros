@@ -38,7 +38,7 @@ HappyMoonControl::HappyMoonControl() {
   server_cmd = nh.subscribe<std_msgs::String>(
       "/happymoon/server_cmd", 10,
       boost::bind(&HappyMoonControl::serverCmdCallback, this, _1));
-  // VIO nav msg
+  // VIO nav msg sub
   vision_odom = nh.subscribe<nav_msgs::Odometry>(
       "/vins_estimator/imu_propagate", 10,
       boost::bind(&HappyMoonControl::stateEstimateCallback, this, _1),
@@ -47,18 +47,37 @@ HappyMoonControl::HappyMoonControl() {
   tofsense_dis = nh.subscribe<happymoon_quad_control::TofsenseFrame0>(
       "/nlink_tofsense_frame0", 10,
       boost::bind(&HappyMoonControl::tofSenseCallback, this, _1));
+  // DJI imu msg sub
+  dji_imu = nh.subscribe<sensor_msgs::Imu>(
+      "/djiros/imu", 10,
+      boost::bind(&HappyMoonControl::djiImuCallback, this, _1));
 
   // thread
   run_behavior_thread_ =
       new std::thread(std::bind(&HappyMoonControl::runBehavior, this));
+
+  stop_quad = false;
 }
 
 void HappyMoonControl::runBehavior(void) {
   ros::NodeHandle n;
-  ros::Rate rate(100.0);
+  ros::Rate rate(50.0);
   while (n.ok()) {
     djiFlightControl flight_ctrl;
     uint32_t ctrl_priority = 0;
+
+    tf::Quaternion quat;
+    tf::quaternionMsgToTF(imu_data.orientation, quat);
+    double roll, pitch, yaw;
+    tf::Matrix3x3(quat).getRPY(roll, pitch, yaw);
+    ROS_INFO("Roll=%f,pitch=%f,yaw=%f,height=%f", roll, pitch, yaw, height_dis);
+
+    if ((fabs(roll) > 0.6) || (fabs(pitch) > 0.6) || stop_quad) {
+      setZeroCtrl(&flight_ctrl);
+      stop_quad = true;
+      ROS_ERROR("WARNING: The quadcopter has turned sideways ");
+    }
+
     if (!ctrl_arbiter_ptr_->getHighestPriorityCtrl(&ctrl_priority,
                                                    &flight_ctrl)) {
       setZeroCtrl(&flight_ctrl);
@@ -83,7 +102,17 @@ void HappyMoonControl::tofSenseCallback(
     return;
   }
   height_dis = msg->dis;
-  ROS_INFO("Current quad height: %f", height_dis);
+}
+
+void HappyMoonControl::djiImuCallback(
+    const sensor_msgs::Imu::ConstPtr &imu_msg) {
+  if (imu_msg == nullptr) {
+    return;
+  }
+  imu_data.header.frame_id = imu_msg->header.frame_id;
+  imu_data.orientation = imu_msg->orientation;
+  imu_data.angular_velocity = imu_msg->angular_velocity;
+  imu_data.linear_acceleration = imu_msg->linear_acceleration;
 }
 
 void HappyMoonControl::joyStickCallback(const sensor_msgs::Joy::ConstPtr &joy) {
@@ -360,7 +389,7 @@ void HappyMoonControl::setZeroCtrl(djiFlightControl *ctrl_msg) {
   }
   ctrl_msg->pitch = 0;
   ctrl_msg->roll = 0;
-  ctrl_msg->thrust = 10;
+  ctrl_msg->thrust = 0;
   ctrl_msg->yawrate = 0;
 }
 
