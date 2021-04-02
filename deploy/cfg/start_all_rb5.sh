@@ -1,4 +1,5 @@
 #!/bin/bash
+
 roslaunch realsense2_camera realsense_camera.launch &
 
 sleep 25
