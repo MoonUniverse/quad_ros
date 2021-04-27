@@ -2,25 +2,25 @@
 
 namespace happymoon_control {
 
-HappyMoonControl::HappyMoonControl() {
+HappyMoonControl::HappyMoonControl() : stop_quad(false) {
   ros::NodeHandle nh("~");
-  nh.param("kpxy", happymoon_config.kpxy, 0.0);
-  nh.param("kdxy", happymoon_config.kdxy, 0.0);
-  nh.param("kpz", happymoon_config.kpz, 0.0);
-  nh.param("kdz", happymoon_config.kdz, 0.0);
-  nh.param("krp", happymoon_config.krp, 0.0);
-  nh.param("kyaw", happymoon_config.kyaw, 0.0);
+  nh.param("kpxy", happymoon_config.kpxy, 10.0);
+  nh.param("kdxy", happymoon_config.kdxy, 4.0);
+  nh.param("kpz", happymoon_config.kpz, 15.0);
+  nh.param("kdz", happymoon_config.kdz, 6.0);
+  nh.param("krp", happymoon_config.krp, 12.0);
+  nh.param("kyaw", happymoon_config.kyaw, 5.0);
 
-  nh.param("refVelXYKp", happymoon_config.refVelXYKp, 0.0);
-  nh.param("refVelZKp", happymoon_config.refVelZKp, 0.0);
-  nh.param("refVelHeadingKp", happymoon_config.refVelHeadingKp, 0.0);
-  nh.param("refVelRateheadingKp", happymoon_config.refVelRateheadingKp, 0.0);
+  nh.param("refVelXYKp", happymoon_config.refVelXYKp, 0.5);
+  nh.param("refVelZKp", happymoon_config.refVelZKp, 0.5);
+  nh.param("refVelHeadingKp", happymoon_config.refVelHeadingKp, 0.5);
+  nh.param("refVelRateheadingKp", happymoon_config.refVelRateheadingKp, 0.5);
 
-  nh.param("pxy_error_max", happymoon_config.pxy_error_max, 0.0);
-  nh.param("vxy_error_max", happymoon_config.vxy_error_max, 0.0);
-  nh.param("pz_error_max", happymoon_config.pz_error_max, 0.0);
-  nh.param("vz_error_max", happymoon_config.vz_error_max, 0.0);
-  nh.param("yaw_error_max", happymoon_config.yaw_error_max, 0.0);
+  nh.param("pxy_error_max", happymoon_config.pxy_error_max, 0.6);
+  nh.param("vxy_error_max", happymoon_config.vxy_error_max, 1.0);
+  nh.param("pz_error_max", happymoon_config.pz_error_max, 0.3);
+  nh.param("vz_error_max", happymoon_config.vz_error_max, 0.75);
+  nh.param("yaw_error_max", happymoon_config.yaw_error_max, 0.7);
 
   nh.param("ref_pos_x", happymoon_reference.position.x(), 0.0);
   nh.param("ref_pos_y", happymoon_reference.position.y(), 0.0);
@@ -55,13 +55,11 @@ HappyMoonControl::HappyMoonControl() {
   // thread
   run_behavior_thread_ =
       new std::thread(std::bind(&HappyMoonControl::runBehavior, this));
-
-  stop_quad = false;
 }
 
 void HappyMoonControl::runBehavior(void) {
   ros::NodeHandle n;
-  ros::Rate rate(50.0);
+  ros::Rate rate(75.0);
   while (n.ok()) {
     djiFlightControl flight_ctrl;
     uint32_t ctrl_priority = 0;
@@ -72,15 +70,15 @@ void HappyMoonControl::runBehavior(void) {
     tf::Matrix3x3(quat).getRPY(roll, pitch, yaw);
     ROS_INFO("Roll=%f,pitch=%f,yaw=%f,height=%f", roll, pitch, yaw, height_dis);
 
+    if (!ctrl_arbiter_ptr_->getHighestPriorityCtrl(&ctrl_priority,
+                                                   &flight_ctrl)) {
+      setZeroCtrl(&flight_ctrl);
+    }
+
     if ((fabs(roll) > 0.6) || (fabs(pitch) > 0.6) || stop_quad) {
       setZeroCtrl(&flight_ctrl);
       stop_quad = true;
       ROS_ERROR("WARNING: The quadcopter has turned sideways ");
-    }
-
-    if (!ctrl_arbiter_ptr_->getHighestPriorityCtrl(&ctrl_priority,
-                                                   &flight_ctrl)) {
-      setZeroCtrl(&flight_ctrl);
     }
 
     sensor_msgs::Joy ctrlAngleThrustData;
