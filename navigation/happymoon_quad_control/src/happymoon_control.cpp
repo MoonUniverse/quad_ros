@@ -81,6 +81,9 @@ void HappyMoonControl::runBehavior(void) {
       ROS_ERROR("WARNING: The quadcopter has turned sideways ");
     }
 
+    ROS_INFO("roll:%f,pitch:%f,THRUST:%f,YawRate:%f", flight_ctrl.pitch,
+           flight_ctrl.roll, flight_ctrl.thrust, flight_ctrl.yawrate);
+
     sensor_msgs::Joy ctrlAngleThrustData;
     ctrlAngleThrustData.header.stamp = ros::Time::now();
     ctrlAngleThrustData.header.frame_id = std::string("FRD");
@@ -133,7 +136,7 @@ void HappyMoonControl::joyStickCallback(const sensor_msgs::Joy::ConstPtr &joy) {
     joy_ctrl.roll = joy->axes[4] * 10;
     joy_ctrl.thrust = (joy->axes[1] + 1.0) * 25;
     joy_ctrl.yawrate = -joy->axes[0] * 50;
-    ROS_INFO("roll:%f,pitch:%f,THRUST:%f,YawRate:%f", -joy->axes[3] * 10,
+    ROS_DEBUG("roll:%f,pitch:%f,THRUST:%f,YawRate:%f", -joy->axes[3] * 10,
              joy->axes[4] * 10, (joy->axes[1] + 1.0) * 25, joy->axes[0] * 50);
     ctrl_arbiter_ptr_->setActiveFlagByPriority(JOY_STICK_PRIO_IDX, true);
     ctrl_arbiter_ptr_->setCtrlByPriority(JOY_STICK_PRIO_IDX, &joy_ctrl);
@@ -248,7 +251,7 @@ void HappyMoonControl::ControlRun(const QuadStateEstimateData &state_estimate,
   nav_ctrl.roll = desired_r_p_y.y();
   nav_ctrl.thrust = command.collective_thrust;
   nav_ctrl.yawrate = config.kyaw * desired_r_p_y.z();
-  ROS_INFO("roll:%f,pitch:%f,THRUST:%f,YawRate:%f", nav_ctrl.pitch,
+  ROS_DEBUG("roll:%f,pitch:%f,THRUST:%f,YawRate:%f", nav_ctrl.pitch,
            nav_ctrl.roll, nav_ctrl.thrust, nav_ctrl.yawrate);
   ctrl_arbiter_ptr_->setActiveFlagByPriority(NAV_PRIO_IDX, true);
   ctrl_arbiter_ptr_->setCtrlByPriority(NAV_PRIO_IDX, &nav_ctrl);
