@@ -68,7 +68,7 @@ void HappyMoonControl::runBehavior(void) {
     tf::quaternionMsgToTF(imu_data.orientation, quat);
     double roll, pitch, yaw;
     tf::Matrix3x3(quat).getRPY(roll, pitch, yaw);
-    ROS_INFO("Roll=%f,pitch=%f,yaw=%f,height=%f", roll, pitch, yaw, height_dis);
+    ROS_INFO("Roll=%f,pitch=%f,yaw=%f,height=%f", roll * 57.3, pitch * 57.3, yaw * 57.3, height_dis);
 
     if (!ctrl_arbiter_ptr_->getHighestPriorityCtrl(&ctrl_priority,
                                                    &flight_ctrl)) {
