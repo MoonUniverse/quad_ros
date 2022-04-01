@@ -91,7 +91,7 @@ using namespace DJI::OSDK;
 class DJISDKNode
 {
 public:
-  DJISDKNode(ros::NodeHandle &nh, ros::NodeHandle &nh_private);
+  DJISDKNode(ros::NodeHandle& nh, ros::NodeHandle& nh_private);
   ~DJISDKNode();
 
   enum TELEMETRY_TYPE
@@ -102,22 +102,22 @@ public:
 
   enum
   {
-    PACKAGE_ID_5HZ = 0,
-    PACKAGE_ID_50HZ = 1,
+    PACKAGE_ID_5HZ   = 0,
+    PACKAGE_ID_50HZ  = 1,
     PACKAGE_ID_100HZ = 2,
     PACKAGE_ID_400HZ = 3
   };
 
 private:
-  bool initVehicle(ros::NodeHandle &nh_private);
-  bool initServices(ros::NodeHandle &nh);
-  bool initFlightControl(ros::NodeHandle &nh);
-  bool initSubscriber(ros::NodeHandle &nh);
-  bool initPublisher(ros::NodeHandle &nh);
-  bool initActions(ros::NodeHandle &nh);
-  bool initDataSubscribeFromFC(ros::NodeHandle &nh);
+  bool initVehicle(ros::NodeHandle& nh_private);
+  bool initServices(ros::NodeHandle& nh);
+  bool initFlightControl(ros::NodeHandle& nh);
+  bool initSubscriber(ros::NodeHandle& nh);
+  bool initPublisher(ros::NodeHandle& nh);
+  bool initActions(ros::NodeHandle& nh);
+  bool initDataSubscribeFromFC(ros::NodeHandle& nh);
   void cleanUpSubscribeFromFC();
-  bool validateSerialDevice(LinuxSerialDevice *serialDevice);
+  bool validateSerialDevice(LinuxSerialDevice* serialDevice);
   bool isM100();
 
   /*!
@@ -131,104 +131,102 @@ private:
 
   //! flight control subscriber callbacks
   void flightControlSetpointCallback(
-      const sensor_msgs::Joy::ConstPtr &pMsg);
+    const sensor_msgs::Joy::ConstPtr& pMsg);
 
   void flightControlPxPyPzYawCallback(
-      const sensor_msgs::Joy::ConstPtr &pMsg);
+    const sensor_msgs::Joy::ConstPtr& pMsg);
 
   void flightControlVxVyVzYawrateCallback(
-      const sensor_msgs::Joy::ConstPtr &pMsg);
+    const sensor_msgs::Joy::ConstPtr& pMsg);
 
   void flightControlRollPitchPzYawrateCallback(
-      const sensor_msgs::Joy::ConstPtr &pMsg);
-  void flightControlRollPitchThrustYawrateCallback(
-      const sensor_msgs::Joy::ConstPtr &pMsg);
+    const sensor_msgs::Joy::ConstPtr& pMsg);
 
   //! general subscriber callbacks
-  void gimbalAngleCtrlCallback(const dji_sdk::Gimbal::ConstPtr &msg);
+  void gimbalAngleCtrlCallback(const dji_sdk::Gimbal::ConstPtr& msg);
   void gimbalSpeedCtrlCallback(
-      const geometry_msgs::Vector3Stamped::ConstPtr &msg);
+    const geometry_msgs::Vector3Stamped::ConstPtr& msg);
 
   //! general service callbacks
-  bool droneActivationCallback(dji_sdk::Activation::Request &request,
-                               dji_sdk::Activation::Response &response);
+  bool droneActivationCallback(dji_sdk::Activation::Request&  request,
+                               dji_sdk::Activation::Response& response);
   bool sdkCtrlAuthorityCallback(
-      dji_sdk::SDKControlAuthority::Request &request,
-      dji_sdk::SDKControlAuthority::Response &response);
+    dji_sdk::SDKControlAuthority::Request&  request,
+    dji_sdk::SDKControlAuthority::Response& response);
 
   bool setLocalPosRefCallback(
-      dji_sdk::SetLocalPosRef::Request &request,
-      dji_sdk::SetLocalPosRef::Response &response);
+      dji_sdk::SetLocalPosRef::Request&  request,
+      dji_sdk::SetLocalPosRef::Response& response);
   //! control service callbacks
-  bool droneArmCallback(dji_sdk::DroneArmControl::Request &request,
-                        dji_sdk::DroneArmControl::Response &response);
-  bool droneTaskCallback(dji_sdk::DroneTaskControl::Request &request,
-                         dji_sdk::DroneTaskControl::Response &response);
+  bool droneArmCallback(dji_sdk::DroneArmControl::Request&  request,
+                        dji_sdk::DroneArmControl::Response& response);
+  bool droneTaskCallback(dji_sdk::DroneTaskControl::Request&  request,
+                         dji_sdk::DroneTaskControl::Response& response);
 
   //! Mobile Data Service
-  bool sendToMobileCallback(dji_sdk::SendMobileData::Request &request,
-                            dji_sdk::SendMobileData::Response &response);
+  bool sendToMobileCallback(dji_sdk::SendMobileData::Request&  request,
+                            dji_sdk::SendMobileData::Response& response);
   //! Payload Data Service
-  bool sendToPayloadCallback(dji_sdk::SendPayloadData::Request &request,
-                             dji_sdk::SendPayloadData::Response &response);
+  bool sendToPayloadCallback(dji_sdk::SendPayloadData::Request& request,
+                             dji_sdk::SendPayloadData::Response& response);
   //! Query Drone FW version
-  bool queryVersionCallback(dji_sdk::QueryDroneVersion::Request &request,
-                            dji_sdk::QueryDroneVersion::Response &response);
+  bool queryVersionCallback(dji_sdk::QueryDroneVersion::Request& request,
+                            dji_sdk::QueryDroneVersion::Response& response);
 
-  bool cameraActionCallback(dji_sdk::CameraAction::Request &request,
-                            dji_sdk::CameraAction::Response &response);
+  bool cameraActionCallback(dji_sdk::CameraAction::Request&  request,
+                            dji_sdk::CameraAction::Response& response);
   //! mfio service callbacks
-  bool MFIOConfigCallback(dji_sdk::MFIOConfig::Request &request,
-                          dji_sdk::MFIOConfig::Response &response);
-  bool MFIOSetValueCallback(dji_sdk::MFIOSetValue::Request &request,
-                            dji_sdk::MFIOSetValue::Response &response);
+  bool MFIOConfigCallback(dji_sdk::MFIOConfig::Request&  request,
+                          dji_sdk::MFIOConfig::Response& response);
+  bool MFIOSetValueCallback(dji_sdk::MFIOSetValue::Request&  request,
+                            dji_sdk::MFIOSetValue::Response& response);
   //! mission service callbacks
   // mission manager
-  bool missionStatusCallback(dji_sdk::MissionStatus::Request &request,
-                             dji_sdk::MissionStatus::Response &response);
+  bool missionStatusCallback(dji_sdk::MissionStatus::Request&  request,
+                             dji_sdk::MissionStatus::Response& response);
   // waypoint mission
-  bool missionWpUploadCallback(dji_sdk::MissionWpUpload::Request &request,
-                               dji_sdk::MissionWpUpload::Response &response);
-  bool missionWpActionCallback(dji_sdk::MissionWpAction::Request &request,
-                               dji_sdk::MissionWpAction::Response &response);
-  bool missionWpGetInfoCallback(dji_sdk::MissionWpGetInfo::Request &request,
-                                dji_sdk::MissionWpGetInfo::Response &response);
+  bool missionWpUploadCallback(dji_sdk::MissionWpUpload::Request&  request,
+                               dji_sdk::MissionWpUpload::Response& response);
+  bool missionWpActionCallback(dji_sdk::MissionWpAction::Request&  request,
+                               dji_sdk::MissionWpAction::Response& response);
+  bool missionWpGetInfoCallback(dji_sdk::MissionWpGetInfo::Request&  request,
+                                dji_sdk::MissionWpGetInfo::Response& response);
   bool missionWpGetSpeedCallback(
-      dji_sdk::MissionWpGetSpeed::Request &request,
-      dji_sdk::MissionWpGetSpeed::Response &response);
+    dji_sdk::MissionWpGetSpeed::Request&  request,
+    dji_sdk::MissionWpGetSpeed::Response& response);
   bool missionWpSetSpeedCallback(
-      dji_sdk::MissionWpSetSpeed::Request &request,
-      dji_sdk::MissionWpSetSpeed::Response &response);
+    dji_sdk::MissionWpSetSpeed::Request&  request,
+    dji_sdk::MissionWpSetSpeed::Response& response);
   // hotpoint mission
-  bool missionHpUploadCallback(dji_sdk::MissionHpUpload::Request &request,
-                               dji_sdk::MissionHpUpload::Response &response);
-  bool missionHpActionCallback(dji_sdk::MissionHpAction::Request &request,
-                               dji_sdk::MissionHpAction::Response &response);
-  bool missionHpGetInfoCallback(dji_sdk::MissionHpGetInfo::Request &request,
-                                dji_sdk::MissionHpGetInfo::Response &response);
+  bool missionHpUploadCallback(dji_sdk::MissionHpUpload::Request&  request,
+                               dji_sdk::MissionHpUpload::Response& response);
+  bool missionHpActionCallback(dji_sdk::MissionHpAction::Request&  request,
+                               dji_sdk::MissionHpAction::Response& response);
+  bool missionHpGetInfoCallback(dji_sdk::MissionHpGetInfo::Request&  request,
+                                dji_sdk::MissionHpGetInfo::Response& response);
   bool missionHpUpdateYawRateCallback(
-      dji_sdk::MissionHpUpdateYawRate::Request &request,
-      dji_sdk::MissionHpUpdateYawRate::Response &response);
+    dji_sdk::MissionHpUpdateYawRate::Request&  request,
+    dji_sdk::MissionHpUpdateYawRate::Response& response);
   bool missionHpResetYawCallback(
-      dji_sdk::MissionHpResetYaw::Request &request,
-      dji_sdk::MissionHpResetYaw::Response &response);
+    dji_sdk::MissionHpResetYaw::Request&  request,
+    dji_sdk::MissionHpResetYaw::Response& response);
   bool missionHpUpdateRadiusCallback(
-      dji_sdk::MissionHpUpdateRadius::Request &request,
-      dji_sdk::MissionHpUpdateRadius::Response &response);
+    dji_sdk::MissionHpUpdateRadius::Request&  request,
+    dji_sdk::MissionHpUpdateRadius::Response& response);
   //! hard sync service callback
-  bool setHardsyncCallback(dji_sdk::SetHardSync::Request &request,
-                           dji_sdk::SetHardSync::Response &response);
+  bool setHardsyncCallback(dji_sdk::SetHardSync::Request&  request,
+                           dji_sdk::SetHardSync::Response& response);
 
 #ifdef ADVANCED_SENSING
   //! stereo image service callback
-  bool stereo240pSubscriptionCallback(dji_sdk::Stereo240pSubscription::Request &request,
-                                      dji_sdk::Stereo240pSubscription::Response &response);
-  bool stereoDepthSubscriptionCallback(dji_sdk::StereoDepthSubscription::Request &request,
-                                       dji_sdk::StereoDepthSubscription::Response &response);
-  bool stereoVGASubscriptionCallback(dji_sdk::StereoVGASubscription::Request &request,
-                                     dji_sdk::StereoVGASubscription::Response &response);
-  bool setupCameraStreamCallback(dji_sdk::SetupCameraStream::Request &request,
-                                 dji_sdk::SetupCameraStream::Response &response);
+  bool stereo240pSubscriptionCallback(dji_sdk::Stereo240pSubscription::Request&  request,
+                                      dji_sdk::Stereo240pSubscription::Response& response);
+  bool stereoDepthSubscriptionCallback(dji_sdk::StereoDepthSubscription::Request&  request,
+                                       dji_sdk::StereoDepthSubscription::Response& response);
+  bool stereoVGASubscriptionCallback(dji_sdk::StereoVGASubscription::Request&  request,
+                                     dji_sdk::StereoVGASubscription::Response& response);
+  bool setupCameraStreamCallback(dji_sdk::SetupCameraStream::Request&  request,
+                                 dji_sdk::SetupCameraStream::Response& response);
 #endif
 
   //! data broadcast callback
@@ -237,7 +235,7 @@ private:
 
   void fromPayloadDataCallback(RecvContainer recvFrame);
 
-  static void NMEACallback(Vehicle *vehiclePtr,
+  static void NMEACallback(Vehicle* vehiclePtr,
                            RecvContainer recvFrame,
                            UserData userData);
 
@@ -245,59 +243,60 @@ private:
                                  RecvContainer recvFrame,
                                  UserData userData);
 
-  static void FCTimeInUTCCallback(Vehicle *vehiclePtr,
+
+  static void FCTimeInUTCCallback(Vehicle* vehiclePtr,
                                   RecvContainer recvFrame,
                                   UserData userData);
 
-  static void PPSSourceCallback(Vehicle *vehiclePtr,
+  static void PPSSourceCallback(Vehicle* vehiclePtr,
                                 RecvContainer recvFrame,
                                 UserData userData);
 
-  static void SDKfromMobileDataCallback(Vehicle *vehicle,
-                                        RecvContainer recvFrame,
+  static void SDKfromMobileDataCallback(Vehicle*            vehicle,
+                                        RecvContainer       recvFrame,
                                         DJI::OSDK::UserData userData);
 
   static void SDKfromPayloadDataCallback(Vehicle *vehicle,
-                                         RecvContainer recvFrame,
-                                         DJI::OSDK::UserData userData);
+                                        RecvContainer recvFrame,
+                                        DJI::OSDK::UserData userData);
 
-  static void SDKBroadcastCallback(Vehicle *vehicle,
-                                   RecvContainer recvFrame,
+  static void SDKBroadcastCallback(Vehicle*            vehicle,
+                                   RecvContainer       recvFrame,
                                    DJI::OSDK::UserData userData);
 
-  static void publish5HzData(Vehicle *vehicle,
-                             RecvContainer recvFrame,
-                             DJI::OSDK::UserData userData);
-
-  static void publish50HzData(Vehicle *vehicle,
-                              RecvContainer recvFrame,
+  static void publish5HzData(Vehicle*            vehicle,
+                              RecvContainer       recvFrame,
                               DJI::OSDK::UserData userData);
 
-  static void publish100HzData(Vehicle *vehicle,
-                               RecvContainer recvFrame,
+  static void publish50HzData(Vehicle*            vehicle,
+                              RecvContainer       recvFrame,
+                              DJI::OSDK::UserData userData);
+
+  static void publish100HzData(Vehicle*            vehicle,
+                               RecvContainer       recvFrame,
                                DJI::OSDK::UserData userData);
 
-  static void publish400HzData(Vehicle *vehicle,
-                               RecvContainer recvFrame,
+  static void publish400HzData(Vehicle*            vehicle,
+                               RecvContainer       recvFrame,
                                DJI::OSDK::UserData userData);
 
 #ifdef ADVANCED_SENSING
-  static void publish240pStereoImage(Vehicle *vehicle,
-                                     RecvContainer recvFrame,
+  static void publish240pStereoImage(Vehicle*            vehicle,
+                                     RecvContainer       recvFrame,
                                      DJI::OSDK::UserData userData);
 
-  static void publishVGAStereoImage(Vehicle *vehicle,
-                                    RecvContainer recvFrame,
+  static void publishVGAStereoImage(Vehicle*            vehicle,
+                                    RecvContainer       recvFrame,
                                     DJI::OSDK::UserData userData);
 
-  static void publishMainCameraImage(CameraRGBImage img, void *userData);
+  static void publishMainCameraImage(CameraRGBImage img, void* userData);
 
-  static void publishFPVCameraImage(CameraRGBImage img, void *userData);
+  static void publishFPVCameraImage(CameraRGBImage img, void* userData);
 #endif
 
 private:
   //! OSDK core
-  Vehicle *vehicle;
+  Vehicle* vehicle;
   //! general service servers
   ros::ServiceServer drone_activation_server;
   ros::ServiceServer sdk_ctrlAuthority_server;
@@ -349,7 +348,6 @@ private:
   ros::Subscriber flight_control_position_yaw_sub;
   ros::Subscriber flight_control_velocity_yawrate_sub;
   ros::Subscriber flight_control_rollpitch_yawrate_vertpos_sub;
-  ros::Subscriber flight_control_rollpitch_yawrate_thrust_sub;
 
   //! general subscribers
   ros::Subscriber gimbal_angle_cmd_subscriber;
@@ -400,21 +398,21 @@ private:
   ros::Publisher fpv_camera_stream_publisher;
 #endif
   //! constant
-  const int WAIT_TIMEOUT = 10;
+  const int WAIT_TIMEOUT           = 10;
   const int MAX_SUBSCRIBE_PACKAGES = 5;
-  const int INVALID_VERSION = 0;
+  const int INVALID_VERSION        = 0;
 
   //! configurations
-  int app_id;
+  int         app_id;
   std::string enc_key;
   std::string drone_version;
   std::string serial_device;
   std::string acm_device;
-  int baud_rate;
-  int app_version;
+  int         baud_rate;
+  int         app_version;
   std::string app_bundle_id; // reserved
-  int uart_or_usb;
-  double gravity_const;
+  int         uart_or_usb;
+  double      gravity_const;
 
   //! use broadcast or subscription to get telemetry data
   TELEMETRY_TYPE telemetry_from_fc;

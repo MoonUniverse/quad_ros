@@ -232,7 +232,12 @@ CameraCalibration::drawResults(std::vector<cv::Mat>& images) const
         cv::Mat& image = images.at(i);
         if (image.channels() == 1)
         {
-            cv::cvtColor(image, image, CV_GRAY2RGB);
+            #if (CV_VERSION_MAJOR >= 4)
+                cv::cvtColor(image, image, cv::COLOR_BGR2RGB);
+            #else
+                cv::cvtColor(image, image, CV_GRAY2RGB);
+            #endif
+            
         }
 
         std::vector<cv::Point2f> estImagePoints;
@@ -250,12 +255,12 @@ CameraCalibration::drawResults(std::vector<cv::Mat>& images) const
             cv::circle(image,
                        cv::Point(cvRound(pObs.x * drawMultiplier),
                                  cvRound(pObs.y * drawMultiplier)),
-                       5, green, 2, CV_AA, drawShiftBits);
+                       5, green, 2, CV_MSA, drawShiftBits);
 
             cv::circle(image,
                        cv::Point(cvRound(pEst.x * drawMultiplier),
                                  cvRound(pEst.y * drawMultiplier)),
-                       5, red, 2, CV_AA, drawShiftBits);
+                       5, red, 2, CV_MSA, drawShiftBits);
 
             float error = cv::norm(pObs - pEst);
 
@@ -272,7 +277,7 @@ CameraCalibration::drawResults(std::vector<cv::Mat>& images) const
 
         cv::putText(image, oss.str(), cv::Point(10, image.rows - 10),
                     cv::FONT_HERSHEY_COMPLEX, 0.5, cv::Scalar(255, 255, 255),
-                    1, CV_AA);
+                    1, CV_MSA);
     }
 }
 

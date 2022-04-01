@@ -11,8 +11,9 @@
 
 #include <dji_sdk/dji_sdk_node.h>
 
-bool DJISDKNode::droneActivationCallback(dji_sdk::Activation::Request &request,
-                                         dji_sdk::Activation::Response &response)
+bool
+DJISDKNode::droneActivationCallback(dji_sdk::Activation::Request&  request,
+                                    dji_sdk::Activation::Response& response)
 {
   ROS_DEBUG("called droneActivationCallback");
 
@@ -23,8 +24,8 @@ bool DJISDKNode::droneActivationCallback(dji_sdk::Activation::Request &request,
   ROS_DEBUG("ack.info: set=%i id=%i", ack.info.cmd_set, ack.info.cmd_id);
   ROS_DEBUG("ack.data: %i", ack.data);
 
-  response.cmd_set = (int)ack.info.cmd_set;
-  response.cmd_id = (int)ack.info.cmd_id;
+  response.cmd_set  = (int)ack.info.cmd_set;
+  response.cmd_id   = (int)ack.info.cmd_id;
   response.ack_data = (unsigned int)ack.data;
 
   if (ACK::getError(ack))
@@ -41,8 +42,9 @@ bool DJISDKNode::droneActivationCallback(dji_sdk::Activation::Request &request,
   return true;
 }
 
-bool DJISDKNode::droneArmCallback(dji_sdk::DroneArmControl::Request &request,
-                                  dji_sdk::DroneArmControl::Response &response)
+bool
+DJISDKNode::droneArmCallback(dji_sdk::DroneArmControl::Request&  request,
+                             dji_sdk::DroneArmControl::Response& response)
 {
   ROS_DEBUG("called droneArmCallback");
 
@@ -62,8 +64,8 @@ bool DJISDKNode::droneArmCallback(dji_sdk::DroneArmControl::Request &request,
   ROS_DEBUG("ack.info: set=%i id=%i", ack.info.cmd_set, ack.info.cmd_id);
   ROS_DEBUG("ack.data: %i", ack.data);
 
-  response.cmd_set = (int)ack.info.cmd_set;
-  response.cmd_id = (int)ack.info.cmd_id;
+  response.cmd_set  = (int)ack.info.cmd_set;
+  response.cmd_id   = (int)ack.info.cmd_id;
   response.ack_data = (unsigned int)ack.data;
 
   if (ACK::getError(ack))
@@ -79,30 +81,31 @@ bool DJISDKNode::droneArmCallback(dji_sdk::DroneArmControl::Request &request,
   return true;
 }
 
-bool DJISDKNode::sdkCtrlAuthorityCallback(
-    dji_sdk::SDKControlAuthority::Request &request,
-    dji_sdk::SDKControlAuthority::Response &response)
+bool
+DJISDKNode::sdkCtrlAuthorityCallback(
+  dji_sdk::SDKControlAuthority::Request&  request,
+  dji_sdk::SDKControlAuthority::Response& response)
 {
 
-  ROS_ERROR("called sdkCtrlAuthorityCallback");
+  ROS_DEBUG("called sdkCtrlAuthorityCallback");
 
   ACK::ErrorCode ack;
   if (request.control_enable)
   {
     ack = vehicle->obtainCtrlAuthority(WAIT_TIMEOUT);
-    ROS_ERROR("called vehicle->obtainCtrlAuthority");
+    ROS_DEBUG("called vehicle->obtainCtrlAuthority");
   }
   else
   {
     ack = vehicle->releaseCtrlAuthority(WAIT_TIMEOUT);
-    ROS_ERROR("called vehicle->releaseCtrlAuthority");
+    ROS_DEBUG("called vehicle->releaseCtrlAuthority");
   }
 
-  ROS_ERROR("ack.info: set=%i id=%i", ack.info.cmd_set, ack.info.cmd_id);
-  ROS_ERROR("ack.data: %i", ack.data);
+  ROS_DEBUG("ack.info: set=%i id=%i", ack.info.cmd_set, ack.info.cmd_id);
+  ROS_DEBUG("ack.data: %i", ack.data);
 
-  response.cmd_set = (int)ack.info.cmd_set;
-  response.cmd_id = (int)ack.info.cmd_id;
+  response.cmd_set  = (int)ack.info.cmd_set;
+  response.cmd_id   = (int)ack.info.cmd_id;
   response.ack_data = (unsigned int)ack.data;
 
   if (ACK::getError(ack))
@@ -118,10 +121,10 @@ bool DJISDKNode::sdkCtrlAuthorityCallback(
   return true;
 }
 
-bool DJISDKNode::setLocalPosRefCallback(dji_sdk::SetLocalPosRef::Request &request,
-                                        dji_sdk::SetLocalPosRef::Response &response)
-{
-  printf("Currrent GPS health is %d \n", current_gps_health);
+bool
+DJISDKNode::setLocalPosRefCallback(dji_sdk::SetLocalPosRef::Request &request,
+                                     dji_sdk::SetLocalPosRef::Response &response) {
+  printf("Currrent GPS health is %d \n",current_gps_health );
   if (current_gps_health > 3)
   {
     local_pos_ref_latitude = current_gps_latitude;
@@ -150,42 +153,43 @@ bool DJISDKNode::setLocalPosRefCallback(dji_sdk::SetLocalPosRef::Request &reques
   return true;
 }
 
-bool DJISDKNode::droneTaskCallback(dji_sdk::DroneTaskControl::Request &request,
-                                   dji_sdk::DroneTaskControl::Response &response)
+bool
+DJISDKNode::droneTaskCallback(dji_sdk::DroneTaskControl::Request&  request,
+                              dji_sdk::DroneTaskControl::Response& response)
 {
 
-  ROS_ERROR("called droneTaskCallback");
+  ROS_DEBUG("called droneTaskCallback");
 
   ACK::ErrorCode ack;
   if (request.task == 4)
   {
     // takeoff
     ack = vehicle->control->takeoff(WAIT_TIMEOUT);
-    ROS_ERROR("called vehicle->control->takeoff()");
+    ROS_DEBUG("called vehicle->control->takeoff()");
   }
   else if (request.task == 6)
   {
     // landing
     ack = vehicle->control->land(WAIT_TIMEOUT);
-    ROS_ERROR("called vehicle->control->land()");
+    ROS_DEBUG("called vehicle->control->land()");
   }
   else if (request.task == 1)
   {
     // gohome
     ack = vehicle->control->goHome(WAIT_TIMEOUT);
-    ROS_ERROR("called vehicle->control->goHome()");
+    ROS_DEBUG("called vehicle->control->goHome()");
   }
   else
   {
-    ROS_ERROR("unknown request task in droneTaskCallback");
+    ROS_WARN("unknown request task in droneTaskCallback");
     response.result = false;
   }
 
-  ROS_ERROR("ack.info: set=%i id=%i", ack.info.cmd_set, ack.info.cmd_id);
-  ROS_ERROR("ack.data: %i", ack.data);
+  ROS_DEBUG("ack.info: set=%i id=%i", ack.info.cmd_set, ack.info.cmd_id);
+  ROS_DEBUG("ack.data: %i", ack.data);
 
-  response.cmd_set = (int)ack.info.cmd_set;
-  response.cmd_id = (int)ack.info.cmd_id;
+  response.cmd_set  = (int)ack.info.cmd_set;
+  response.cmd_id   = (int)ack.info.cmd_id;
   response.ack_data = (unsigned int)ack.data;
 
   if (ACK::getError(ack))
@@ -201,8 +205,9 @@ bool DJISDKNode::droneTaskCallback(dji_sdk::DroneTaskControl::Request &request,
   return true;
 }
 
-bool DJISDKNode::cameraActionCallback(dji_sdk::CameraAction::Request &request,
-                                      dji_sdk::CameraAction::Response &response)
+bool
+DJISDKNode::cameraActionCallback(dji_sdk::CameraAction::Request&  request,
+                                 dji_sdk::CameraAction::Response& response)
 {
   ROS_DEBUG("called cameraActionCallback");
 
@@ -230,8 +235,9 @@ bool DJISDKNode::cameraActionCallback(dji_sdk::CameraAction::Request &request,
   return true;
 }
 
-bool DJISDKNode::MFIOConfigCallback(dji_sdk::MFIOConfig::Request &request,
-                                    dji_sdk::MFIOConfig::Response &response)
+bool
+DJISDKNode::MFIOConfigCallback(dji_sdk::MFIOConfig::Request&  request,
+                               dji_sdk::MFIOConfig::Response& response)
 {
   ROS_DEBUG("called MFIOConfigCallback");
 
@@ -242,8 +248,9 @@ bool DJISDKNode::MFIOConfigCallback(dji_sdk::MFIOConfig::Request &request,
   return true;
 }
 
-bool DJISDKNode::MFIOSetValueCallback(dji_sdk::MFIOSetValue::Request &request,
-                                      dji_sdk::MFIOSetValue::Response &response)
+bool
+DJISDKNode::MFIOSetValueCallback(dji_sdk::MFIOSetValue::Request&  request,
+                                 dji_sdk::MFIOSetValue::Response& response)
 {
   ROS_DEBUG("called MFIOSetValueCallback");
 
@@ -252,8 +259,9 @@ bool DJISDKNode::MFIOSetValueCallback(dji_sdk::MFIOSetValue::Request &request,
   return true;
 }
 
-bool DJISDKNode::setHardsyncCallback(dji_sdk::SetHardSync::Request &request,
-                                     dji_sdk::SetHardSync::Response &response)
+bool
+DJISDKNode::setHardsyncCallback(dji_sdk::SetHardSync::Request&  request,
+                                dji_sdk::SetHardSync::Response& response)
 {
   ROS_DEBUG("called setHardsyncCallback");
   if (request.frequency == 0)
@@ -284,13 +292,13 @@ bool DJISDKNode::setHardsyncCallback(dji_sdk::SetHardSync::Request &request,
   return true;
 }
 
-bool DJISDKNode::queryVersionCallback(dji_sdk::QueryDroneVersion::Request &request,
-                                      dji_sdk::QueryDroneVersion::Response &response)
+bool DJISDKNode::queryVersionCallback(dji_sdk::QueryDroneVersion::Request& request,
+                                      dji_sdk::QueryDroneVersion::Response& response)
 {
   response.version = vehicle->getFwVersion();
   response.hardware = std::string(vehicle->getHwVersion());
 
-  if (response.version == 0)
+  if(response.version == 0)
   {
     ROS_INFO("Failed to get a valid Firmware version from drone!");
   }
@@ -299,8 +307,9 @@ bool DJISDKNode::queryVersionCallback(dji_sdk::QueryDroneVersion::Request &reque
 }
 
 #ifdef ADVANCED_SENSING
-bool DJISDKNode::stereo240pSubscriptionCallback(dji_sdk::Stereo240pSubscription::Request &request,
-                                                dji_sdk::Stereo240pSubscription::Response &response)
+bool
+DJISDKNode::stereo240pSubscriptionCallback(dji_sdk::Stereo240pSubscription::Request&  request,
+                                           dji_sdk::Stereo240pSubscription::Response& response)
 {
   ROS_DEBUG("called stereo240pSubscriptionCallback");
 
@@ -345,8 +354,9 @@ bool DJISDKNode::stereo240pSubscriptionCallback(dji_sdk::Stereo240pSubscription:
   return true;
 }
 
-bool DJISDKNode::stereoDepthSubscriptionCallback(dji_sdk::StereoDepthSubscription::Request &request,
-                                                 dji_sdk::StereoDepthSubscription::Response &response)
+bool
+DJISDKNode::stereoDepthSubscriptionCallback(dji_sdk::StereoDepthSubscription::Request&  request,
+                                            dji_sdk::StereoDepthSubscription::Response& response)
 {
   ROS_DEBUG("called stereoDepthSubscriptionCallback");
 
@@ -384,8 +394,9 @@ bool DJISDKNode::stereoDepthSubscriptionCallback(dji_sdk::StereoDepthSubscriptio
   return true;
 }
 
-bool DJISDKNode::stereoVGASubscriptionCallback(dji_sdk::StereoVGASubscription::Request &request,
-                                               dji_sdk::StereoVGASubscription::Response &response)
+bool
+DJISDKNode::stereoVGASubscriptionCallback(dji_sdk::StereoVGASubscription::Request&  request,
+                                          dji_sdk::StereoVGASubscription::Response& response)
 {
   ROS_DEBUG("called stereoVGASubscriptionCallback");
 
@@ -397,7 +408,8 @@ bool DJISDKNode::stereoVGASubscriptionCallback(dji_sdk::StereoVGASubscription::R
     return true;
   }
 
-  if (request.vga_freq != request.VGA_20_HZ && request.vga_freq != request.VGA_10_HZ)
+  if (request.vga_freq != request.VGA_20_HZ
+      && request.vga_freq != request.VGA_10_HZ)
   {
     ROS_ERROR("VGA subscription frequency is wrong");
     response.result = false;
@@ -424,15 +436,17 @@ bool DJISDKNode::stereoVGASubscriptionCallback(dji_sdk::StereoVGASubscription::R
   return true;
 }
 
-bool DJISDKNode::setupCameraStreamCallback(dji_sdk::SetupCameraStream::Request &request,
-                                           dji_sdk::SetupCameraStream::Response &response)
+
+bool
+DJISDKNode::setupCameraStreamCallback(dji_sdk::SetupCameraStream::Request&  request,
+                                      dji_sdk::SetupCameraStream::Response& response)
 {
   ROS_DEBUG("called cameraStreamCallback");
   bool result = false;
 
-  if (request.cameraType == request.FPV_CAM)
+  if(request.cameraType == request.FPV_CAM)
   {
-    if (request.start == 1)
+    if(request.start == 1)
     {
       result = vehicle->advancedSensing->startFPVCameraStream(&publishFPVCameraImage, this);
     }
@@ -442,9 +456,9 @@ bool DJISDKNode::setupCameraStreamCallback(dji_sdk::SetupCameraStream::Request &
       result = true;
     }
   }
-  else if (request.cameraType == request.MAIN_CAM)
+  else if(request.cameraType == request.MAIN_CAM)
   {
-    if (request.start == 1)
+    if(request.start == 1)
     {
       result = vehicle->advancedSensing->startMainCameraStream(&publishMainCameraImage, this);
     }
