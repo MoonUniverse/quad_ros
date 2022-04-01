@@ -2,27 +2,27 @@
 
 roslaunch realsense2_camera realsense_camera.launch &
 
-sleep 25
+sleep 50
 
 echo "realsense_camera starting success!"
 
-roslaunch djiros djiros.launch &
+roslaunch dji_sdk sdk.launch &
+
+sleep 30
+
+echo "dji_sdk starting success!"
+
+roslaunch vins vins_fusion.launch &
 
 sleep 15
 
-echo "djiros starting success!"
+echo "vins starting success!"
 
-roslaunch nlink_parser tofsense.launch &
+# roslaunch happymoon_quad_control happymoon_control.launch &
 
-sleep 10
+# sleep 5
 
-echo "tofsense starting success!"
-
-roslaunch happymoon_quad_control happymoon_control.launch &
-
-sleep 5
-
-echo "happymoon_quad_control starting success!"
+# echo "happymoon_quad_control starting success!"
 
 
 
