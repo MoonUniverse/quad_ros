@@ -158,7 +158,7 @@ private:
   ros::Publisher ctrlAngleThrust;
   ros::Publisher ctrlAnglePX4;
   ros::Publisher ctrlManualControlPX4;
-  ros::Publisher local_pos_pub;
+  ros::Publisher ctrlExpectAnglePX4;
 
   ros::Subscriber joy_cmd_sub;
   ros::Subscriber imu_data_sub;

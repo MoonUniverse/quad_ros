@@ -35,6 +35,7 @@ namespace happymoon_control
     ctrlAngleThrust = nh.advertise<sensor_msgs::Joy>("/djiros/ctrl", 1);
     ctrlAnglePX4 = nh.advertise<geometry_msgs::PoseStamped>("/mavros/setpoint_attitude/attitude", 1);
     ctrlManualControlPX4 = nh.advertise<mavros_msgs::ManualControl>("/mavros/manual_control/send", 1);
+    ctrlExpectAnglePX4 = nh.advertise<geometry_msgs::PoseStamped>("/mavros/setpoint_attitude/attitude", 1);
 
     // Subcribe the control signal
     joy_cmd_sub = nh.subscribe<sensor_msgs::Joy>(
@@ -45,7 +46,7 @@ namespace happymoon_control
         boost::bind(&HappyMoonControl::serverCmdCallback, this, _1));
     // VIO nav msg sub
     vision_odom_sub = nh.subscribe<nav_msgs::Odometry>(
-        "/vins_estimator/imu_propagate", 1,
+        "/mavros/local_position/odom", 1,
         boost::bind(&HappyMoonControl::stateEstimateCallback, this, _1),
         ros::VoidConstPtr(), ros::TransportHints().tcpNoDelay());
     // TofSense msg sub
@@ -75,33 +76,14 @@ namespace happymoon_control
   void HappyMoonControl::runBehavior(void)
   {
     ros::NodeHandle n;
-    ros::Rate rate(100.0);
+    ros::Rate rate(50.0);
 
     while (n.ok())
     {
       // set mode call back
-
-
-      // if( current_state.mode != "AUTO.TAKEOFF" &&
-      //     (ros::Time::now() - last_request > ros::Duration(5.0))){
-      //     if( set_mode_client.call(offb_set_mode) &&
-      //         offb_set_mode.response.mode_sent){
-      //         ROS_INFO("AUTO.TAKEOFF enabled");
-      //     }
-      //     last_request = ros::Time::now();
-      // } else {
-      //     if( !current_state.armed &&
-      //         (ros::Time::now() - last_request > ros::Duration(5.0))){
-      //         if( arming_client.call(arm_cmd) &&
-      //             arm_cmd.response.success){
-      //             ROS_INFO("Vehicle armed");
-      //         }
-      //         last_request = ros::Time::now();
-      //     }
-      // }
       
-      // djiFlightControl flight_ctrl;
-      // uint32_t ctrl_priority = 0;
+      djiFlightControl flight_ctrl;
+      uint32_t ctrl_priority = 0;
 
       // tf::Quaternion quat;
       // tf::quaternionMsgToTF(imu_data.orientation, quat);
@@ -109,11 +91,11 @@ namespace happymoon_control
       // tf::Matrix3x3(quat).getRPY(roll, pitch, yaw);
       // ROS_INFO("Roll=%f,pitch=%f,yaw=%f,height=%f", roll * 57.3, pitch * 57.3, yaw * 57.3, height_dis);
 
-      // if (!ctrl_arbiter_ptr_->getHighestPriorityCtrl(&ctrl_priority,
-      //                                                &flight_ctrl))
-      // {
-      //   setZeroCtrl(&flight_ctrl);
-      // }
+      if (!ctrl_arbiter_ptr_->getHighestPriorityCtrl(&ctrl_priority,
+                                                     &flight_ctrl))
+      {
+        setZeroCtrl(&flight_ctrl);
+      }
 
       // if ((fabs(roll) > 0.6) || (fabs(pitch) > 0.6) || stop_quad)
       // {
@@ -122,17 +104,21 @@ namespace happymoon_control
       //   ROS_ERROR("WARNING: The quadcopter has turned sideways ");
       // }
 
-      // ROS_INFO("roll:%f,pitch:%f,THRUST:%f,YawRate:%f", flight_ctrl.pitch,
-      //          flight_ctrl.roll, flight_ctrl.thrust, flight_ctrl.yawrate);
+      ROS_INFO("roll:%f,pitch:%f,THRUST:%f,YawRate:%f", flight_ctrl.pitch,
+               flight_ctrl.roll, flight_ctrl.thrust, flight_ctrl.yawrate);
 
-      // sensor_msgs::Joy ctrlAngleThrustData;
-      // ctrlAngleThrustData.header.stamp = ros::Time::now();
-      // ctrlAngleThrustData.header.frame_id = std::string("FRD");
-      // ctrlAngleThrustData.axes.push_back(flight_ctrl.pitch);   // roll
-      // ctrlAngleThrustData.axes.push_back(flight_ctrl.roll);    // pitch
-      // ctrlAngleThrustData.axes.push_back(flight_ctrl.thrust);  // thrust
-      // ctrlAngleThrustData.axes.push_back(flight_ctrl.yawrate); // yawRate
-      // ctrlAngleThrust.publish(ctrlAngleThrustData);
+      
+      //&& current_state.mode == "STABILIZED"
+      if(current_state.armed ){
+        mavros_msgs::ManualControl remote_msg;
+        remote_msg.header.frame_id = "base_link";
+        remote_msg.x = flight_ctrl.roll * 50;
+        remote_msg.y = flight_ctrl.pitch * 50;
+        remote_msg.z = flight_ctrl.thrust * 100;
+        remote_msg.r = 0 * 100;
+        ctrlManualControlPX4.publish(remote_msg);
+      }
+
       ros::spinOnce();
       rate.sleep();
     }
@@ -141,7 +127,7 @@ namespace happymoon_control
   
   void HappyMoonControl::state_cb(const mavros_msgs::State::ConstPtr& msg){
       current_state = *msg;
-      std::cout << current_state << std::endl;
+      // std::cout << current_state << std::endl;
   }
 
   void HappyMoonControl::tofSenseCallback(
@@ -200,46 +186,6 @@ namespace happymoon_control
         ROS_INFO("Vehicle unarmed");
       }
     }
-
-    mavros_msgs::ManualControl remote_msg;
-    remote_msg.header.frame_id = "base_link";
-    remote_msg.header.stamp = ros::Time::now();
-    remote_msg.y = joy->axes[3] * 1000;
-    remote_msg.x = -joy->axes[4] * 1000;
-    remote_msg.z = joy->axes[1] * 1000 + 1000;
-    remote_msg.r = joy->axes[0] * 1000;
-
-    ROS_INFO("remote_msg.r: %f",remote_msg.r);
-
-    ctrlManualControlPX4.publish(remote_msg);
-
-    // djiFlightControl joy_ctrl;
-
-    // joy_ctrl.pitch = 0;
-    // joy_ctrl.roll = 0;
-    // joy_ctrl.thrust = 0;
-    // joy_ctrl.yawrate = 0;
-    // if (joy == nullptr)
-    // {
-    //   return;
-    // }
-    // if ((0 == joy->buttons[0]) && (0 == joy->buttons[2]))
-    // {
-    //   ctrl_arbiter_ptr_->setActiveFlagByPriority(JOY_STICK_PRIO_IDX, false);
-    //   ctrl_arbiter_ptr_->setCtrlByPriority(JOY_STICK_PRIO_IDX, &joy_ctrl);
-    //   return;
-    // }
-    // if (1 == joy->buttons[0])
-    // {
-    //   joy_ctrl.pitch = joy->axes[3] * 10;
-    //   joy_ctrl.roll = joy->axes[4] * 10;
-    //   joy_ctrl.thrust = (joy->axes[1] + 1.0) * 25;
-    //   joy_ctrl.yawrate = -joy->axes[0] * 50;
-    //   ROS_DEBUG("roll:%f,pitch:%f,THRUST:%f,YawRate:%f", -joy->axes[3] * 10,
-    //             joy->axes[4] * 10, (joy->axes[1] + 1.0) * 25, joy->axes[0] * 50);
-    //   ctrl_arbiter_ptr_->setActiveFlagByPriority(JOY_STICK_PRIO_IDX, true);
-    //   ctrl_arbiter_ptr_->setCtrlByPriority(JOY_STICK_PRIO_IDX, &joy_ctrl);
-    // }
   }
 
   void HappyMoonControl::serverCmdCallback(
@@ -362,8 +308,8 @@ namespace happymoon_control
     nav_ctrl.roll = desired_r_p_y.y();
     nav_ctrl.thrust = command.collective_thrust;
     nav_ctrl.yawrate = config.kyaw * desired_r_p_y.z();
-    ROS_DEBUG("roll:%f,pitch:%f,THRUST:%f,YawRate:%f", nav_ctrl.pitch,
-              nav_ctrl.roll, nav_ctrl.thrust, nav_ctrl.yawrate);
+    // ROS_INFO("nav.roll:%f,nav_pitch:%f,nav_THRUST:%f,nav_YawRate:%f", nav_ctrl.pitch,
+    //           nav_ctrl.roll, nav_ctrl.thrust, nav_ctrl.yawrate);
     ctrl_arbiter_ptr_->setActiveFlagByPriority(NAV_PRIO_IDX, true);
     ctrl_arbiter_ptr_->setCtrlByPriority(NAV_PRIO_IDX, &nav_ctrl);
   }
