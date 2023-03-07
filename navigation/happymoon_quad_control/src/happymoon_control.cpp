@@ -35,7 +35,7 @@ namespace happymoon_control
     ctrlAngleThrust = nh.advertise<sensor_msgs::Joy>("/djiros/ctrl", 1);
     ctrlAnglePX4 = nh.advertise<geometry_msgs::PoseStamped>("/mavros/setpoint_attitude/attitude", 1);
     ctrlManualControlPX4 = nh.advertise<mavros_msgs::ManualControl>("/mavros/manual_control/send", 1);
-    ctrlExpectAnglePX4 = nh.advertise<geometry_msgs::PoseStamped>("/mavros/setpoint_attitude/attitude", 1);
+    ctrlExpectAngleThrustPX4 = nh.advertise<mavros_msgs::AttitudeTarget>("/mavros/setpoint_raw/attitude", 1);
 
     // Subcribe the control signal
     joy_cmd_sub = nh.subscribe<sensor_msgs::Joy>(
@@ -80,44 +80,9 @@ namespace happymoon_control
 
     while (n.ok())
     {
-      // set mode call back
-      
-      djiFlightControl flight_ctrl;
-      uint32_t ctrl_priority = 0;
-
-      // tf::Quaternion quat;
-      // tf::quaternionMsgToTF(imu_data.orientation, quat);
-      // double roll, pitch, yaw;
-      // tf::Matrix3x3(quat).getRPY(roll, pitch, yaw);
-      // ROS_INFO("Roll=%f,pitch=%f,yaw=%f,height=%f", roll * 57.3, pitch * 57.3, yaw * 57.3, height_dis);
-
-      if (!ctrl_arbiter_ptr_->getHighestPriorityCtrl(&ctrl_priority,
-                                                     &flight_ctrl))
-      {
-        setZeroCtrl(&flight_ctrl);
-      }
-
-      // if ((fabs(roll) > 0.6) || (fabs(pitch) > 0.6) || stop_quad)
-      // {
-      //   setZeroCtrl(&flight_ctrl);
-      //   stop_quad = true;
-      //   ROS_ERROR("WARNING: The quadcopter has turned sideways ");
-      // }
-
-      ROS_INFO("roll:%f,pitch:%f,THRUST:%f,YawRate:%f", flight_ctrl.pitch,
-               flight_ctrl.roll, flight_ctrl.thrust, flight_ctrl.yawrate);
 
       
-      //&& current_state.mode == "STABILIZED"
-      if(current_state.armed ){
-        mavros_msgs::ManualControl remote_msg;
-        remote_msg.header.frame_id = "base_link";
-        remote_msg.x = flight_ctrl.roll * 50;
-        remote_msg.y = flight_ctrl.pitch * 50;
-        remote_msg.z = flight_ctrl.thrust * 100;
-        remote_msg.r = 0 * 100;
-        ctrlManualControlPX4.publish(remote_msg);
-      }
+
 
       ros::spinOnce();
       rate.sleep();
@@ -300,18 +265,31 @@ namespace happymoon_control
     const Eigen::Quaterniond desired_attitude =
         computeDesiredAttitude(desired_acceleration, state_reference.heading,
                                state_estimate.orientation);
+
     const Eigen::Vector3d desired_r_p_y =
         mathcommon_.quaternionToEulerAnglesZYX(desired_attitude);
+    geometry_msgs::Vector3 desired_r_p_y_rate;
+    desired_r_p_y_rate.x = 0.5 * desired_r_p_y.x();
+    desired_r_p_y_rate.y = 0.5 * desired_r_p_y.y();
+    desired_r_p_y_rate.z = 0.2 * desired_r_p_y.z();
 
-    djiFlightControl nav_ctrl;
-    nav_ctrl.pitch = desired_r_p_y.x();
-    nav_ctrl.roll = desired_r_p_y.y();
-    nav_ctrl.thrust = command.collective_thrust;
-    nav_ctrl.yawrate = config.kyaw * desired_r_p_y.z();
-    // ROS_INFO("nav.roll:%f,nav_pitch:%f,nav_THRUST:%f,nav_YawRate:%f", nav_ctrl.pitch,
-    //           nav_ctrl.roll, nav_ctrl.thrust, nav_ctrl.yawrate);
-    ctrl_arbiter_ptr_->setActiveFlagByPriority(NAV_PRIO_IDX, true);
-    ctrl_arbiter_ptr_->setCtrlByPriority(NAV_PRIO_IDX, &nav_ctrl);
+    mavros_msgs::AttitudeTarget expect_px;
+
+    if(current_state.armed && current_state.mode == "OFFBOARD"){
+      expect_px.header.frame_id = "base_link";
+      expect_px.header.stamp = ros::Time::now();
+      expect_px.type_mask = 7;
+      expect_px.orientation = geometryToEigen_.eigenToGeometry(desired_attitude);
+      expect_px.body_rate = desired_r_p_y_rate;
+      expect_px.thrust = command.collective_thrust / 10;
+    }else{
+      expect_px.header.frame_id = "base_link";
+      expect_px.header.stamp = ros::Time::now();
+      expect_px.orientation = geometryToEigen_.eigenToGeometry(desired_attitude);
+      expect_px.body_rate = desired_r_p_y_rate;
+      expect_px.thrust = 0;
+    }
+    ctrlExpectAngleThrustPX4.publish(expect_px);
   }
 
   Eigen::Vector3d HappyMoonControl::computePIDErrorAcc(

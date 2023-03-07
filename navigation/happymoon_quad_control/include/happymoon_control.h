@@ -30,6 +30,7 @@
 #include <boost/thread.hpp>
 #include <happymoon_quad_control/TofsenseFrame0.h>
 #include <mavros_msgs/ManualControl.h>
+#include <mavros_msgs/AttitudeTarget.h>
 
 #include <eigen3/Eigen/Dense>
 
@@ -158,7 +159,7 @@ private:
   ros::Publisher ctrlAngleThrust;
   ros::Publisher ctrlAnglePX4;
   ros::Publisher ctrlManualControlPX4;
-  ros::Publisher ctrlExpectAnglePX4;
+  ros::Publisher ctrlExpectAngleThrustPX4;
 
   ros::Subscriber joy_cmd_sub;
   ros::Subscriber imu_data_sub;
