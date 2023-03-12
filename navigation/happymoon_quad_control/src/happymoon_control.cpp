@@ -295,7 +295,7 @@ namespace happymoon_control
       // [0.13018744 0.12771589]
       #define realquad
       #ifdef realquad
-        expect_px.thrust = 1.2 * (0.13018744 * command.collective_thrust/7.1 + 0.12771589);
+        expect_px.thrust = happymoon_config.k_thrust_horz * (0.13018744 * command.collective_thrust/7.1 + 0.12771589);
         ROS_ERROR("expect_px.thrust  :%f",expect_px.thrust);
       #endif
     }else{

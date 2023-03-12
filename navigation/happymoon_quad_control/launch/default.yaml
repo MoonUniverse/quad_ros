@@ -1,7 +1,7 @@
 kpxy: 3.0
 kdxy: 3.0
 
-kpz: 5.0
+kpz: 6.0
 kdz: 5.0
 krp: 8.0
 kyaw: 5.0
@@ -20,7 +20,7 @@ yaw_error_max: 0.7
 k_drag_x: 0.0
 k_drag_y: 0.0
 k_drag_z: 0.0
-k_thrust_horz: 0.0
+k_thrust_horz: 1.15
 
 ref_pos_x: 0.0
 ref_pos_y: 0.0
