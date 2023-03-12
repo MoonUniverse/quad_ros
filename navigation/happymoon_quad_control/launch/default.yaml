@@ -1,9 +1,9 @@
-kpxy: 10.0
-kdxy: 4.0
+kpxy: 3.0
+kdxy: 3.0
 
-kpz: 15.0
-kdz: 6.0
-krp: 12.0
+kpz: 5.0
+kdz: 5.0
+krp: 8.0
 kyaw: 5.0
 
 refVelXYKp: 0.5
@@ -11,10 +11,10 @@ refVelZKp: 0.5
 refVelHeadingKp: 0.5
 refVelRateheadingKp: 0.5
 
-pxy_error_max: 0.6
-vxy_error_max: 1.0
-pz_error_max: 0.3
-vz_error_max: 0.75
+pxy_error_max: 0.5
+vxy_error_max: 0.5
+pz_error_max: 0.5
+vz_error_max: 0.5
 yaw_error_max: 0.7
 
 k_drag_x: 0.0

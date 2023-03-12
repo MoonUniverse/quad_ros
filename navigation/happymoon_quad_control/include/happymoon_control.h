@@ -11,6 +11,10 @@
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/Quaternion.h>
 #include <geometry_msgs/QuaternionStamped.h>
+#include <geometry_msgs/PoseStamped.h>
+#include <mavros_msgs/CommandBool.h>
+#include <mavros_msgs/SetMode.h>
+#include <mavros_msgs/State.h>
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/Vector3.h>
 #include <geometry_msgs/Vector3Stamped.h>
@@ -25,6 +29,8 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/thread.hpp>
 #include <happymoon_quad_control/TofsenseFrame0.h>
+#include <mavros_msgs/ManualControl.h>
+#include <mavros_msgs/AttitudeTarget.h>
 
 #include <eigen3/Eigen/Dense>
 
@@ -78,6 +84,8 @@ struct PositionControllerParams {
   double refVelHeadingKp;
   double refVelRateheadingKp;
 
+  double ref_vxy_error_max; //[m/s]
+  double ref_vz_error_max; //[m/s]
   double pxy_error_max; // [m]
   double vxy_error_max; // [m/s]
   double pz_error_max;  // [m]
@@ -113,10 +121,11 @@ private:
   void stateEstimateCallback(const nav_msgs::Odometry::ConstPtr &msg);
   void
   tofSenseCallback(const happymoon_quad_control::TofsenseFrame0::ConstPtr &msg);
-  void djiImuCallback(const sensor_msgs::Imu::ConstPtr &imu_msg);
+  void ImuCallback(const sensor_msgs::Imu::ConstPtr &imu_msg);
   Eigen::Vector3d geometryToEigen(const geometry_msgs::Point &vec_ros);
   QuadStateReferenceData QuadReferenceState(HappymoonReference ref_msg,
-                                            QuadStateEstimateData est_msg);
+                                            QuadStateEstimateData est_msg, 
+                                            const PositionControllerParams &config);
   QuadStateEstimateData QuadStateEstimate(const nav_msgs::Odometry &msg);
   void ControlRun(const QuadStateEstimateData &state_estimate,
                   const QuadStateReferenceData &state_reference,
@@ -145,15 +154,25 @@ private:
   bool almostZero(const double value);
   bool almostZeroThrust(const double thrust_value);
 
+  void state_cb(const mavros_msgs::State::ConstPtr& msg);
+
   void runBehavior(void);
 
   ros::Publisher ctrlAngleThrust;
+  ros::Publisher ctrlAnglePX4;
+  ros::Publisher ctrlManualControlPX4;
+  ros::Publisher ctrlExpectAngleThrustPX4;
 
-  ros::Subscriber joy_cmd;
-  ros::Subscriber dji_imu;
-  ros::Subscriber server_cmd;
-  ros::Subscriber vision_odom;
-  ros::Subscriber tofsense_dis;
+  ros::Subscriber joy_cmd_sub;
+  ros::Subscriber imu_data_sub;
+  ros::Subscriber server_cmd_sub;
+  ros::Subscriber vision_odom_sub;
+  ros::Subscriber tofsense_dis_sub;
+  ros::Subscriber state_sub;
+
+  ros::ServiceClient arming_client;
+  ros::ServiceClient set_mode_client;
+  
 
   mutable std::mutex main_mutex_;
   std::thread *run_behavior_thread_;
@@ -175,9 +194,15 @@ private:
 
   // Constants
   const Eigen::Vector3d kGravity_ = Eigen::Vector3d(0.0, 0.0, -9.81);
-  static constexpr double kMinNormalizedCollectiveThrust_ = 1.0;
+  static constexpr double kMinNormalizedCollectiveThrust_ = 8.0;
+  static constexpr double kMaxNormalizedCollectiveThrust_ = 15.0; 
   static constexpr double kAlmostZeroValueThreshold_ = 0.001;
   static constexpr double kAlmostZeroThrustThreshold_ = 0.01;
+
+  // mavros msg
+  mavros_msgs::State current_state;
+  mavros_msgs::SetMode set_mode;
+  mavros_msgs::CommandBool arm_cmd;
 };
 
 } // namespace happymoon_control

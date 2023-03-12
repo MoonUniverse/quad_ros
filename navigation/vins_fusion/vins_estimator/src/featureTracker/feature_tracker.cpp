@@ -83,7 +83,7 @@ void FeatureTracker::setMask()
     }
 }
 
-double FeatureTracker::distance(cv::Point2f &pt1, cv::Point2f &pt2)
+inline double FeatureTracker::distance(cv::Point2f &pt1, cv::Point2f &pt2)
 {
     //printf("pt1: %f %f pt2: %f %f\n", pt1.x, pt1.y, pt2.x, pt2.y);
     double dx = pt1.x - pt2.x;
@@ -301,7 +301,7 @@ map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> FeatureTracker::trackIm
         }
     }
 
-    //printf("feature track whole time %f\n", t_r.toc());
+    printf("feature track whole time %f\n", t_r.toc());
     return featureFrame;
 }
 

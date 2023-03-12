@@ -2,15 +2,21 @@
 
 roslaunch realsense2_camera realsense_camera.launch &
 
-sleep 50
+sleep 40
 
 echo "realsense_camera starting success!"
 
-roslaunch dji_sdk sdk.launch &
+cd /home/rb5_quad/catkin_ws/src/quad_ros/driver/px4_driver/launch/
 
-sleep 30
+roslaunch px4.launch &
 
-echo "dji_sdk starting success!"
+sleep 15
+
+echo "px4 starting success!"
+
+rosrun mavros mavcmd long 511 105 5000 0 0 0 0 0 &
+
+sleep 5
 
 roslaunch vins vins_fusion.launch &
 

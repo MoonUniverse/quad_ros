@@ -18,11 +18,14 @@ namespace happymoon_control
     nh.param("refVelHeadingKp", happymoon_config.refVelHeadingKp, 0.5);
     nh.param("refVelRateheadingKp", happymoon_config.refVelRateheadingKp, 0.5);
 
+    nh.param("ref_vxy_error_max", happymoon_config.ref_vxy_error_max, 0.5);
+    nh.param("ref_vz_error_max", happymoon_config.ref_vz_error_max, 0.5);
     nh.param("pxy_error_max", happymoon_config.pxy_error_max, 0.6);
     nh.param("vxy_error_max", happymoon_config.vxy_error_max, 1.0);
     nh.param("pz_error_max", happymoon_config.pz_error_max, 0.3);
     nh.param("vz_error_max", happymoon_config.vz_error_max, 0.75);
     nh.param("yaw_error_max", happymoon_config.yaw_error_max, 0.7);
+    nh.param("k_thrust_horz", happymoon_config.k_thrust_horz, 1.0);
 
     nh.param("ref_pos_x", happymoon_reference.position.x(), 0.0);
     nh.param("ref_pos_y", happymoon_reference.position.y(), 0.0);
@@ -32,27 +35,41 @@ namespace happymoon_control
 
     ctrl_arbiter_ptr_.reset(new ControlDataArbiter());
     // Publish the control signal
-    ctrlAngleThrust = nh.advertise<sensor_msgs::Joy>("/djiros/ctrl", 10);
+    ctrlAngleThrust = nh.advertise<sensor_msgs::Joy>("/djiros/ctrl", 1);
+    ctrlAnglePX4 = nh.advertise<geometry_msgs::PoseStamped>("/mavros/setpoint_attitude/attitude", 1);
+    ctrlManualControlPX4 = nh.advertise<mavros_msgs::ManualControl>("/mavros/manual_control/send", 1);
+    ctrlExpectAngleThrustPX4 = nh.advertise<mavros_msgs::AttitudeTarget>("/mavros/setpoint_raw/attitude", 1);
+
     // Subcribe the control signal
-    joy_cmd = nh.subscribe<sensor_msgs::Joy>(
+    joy_cmd_sub = nh.subscribe<sensor_msgs::Joy>(
         "/joy", 10, boost::bind(&HappyMoonControl::joyStickCallback, this, _1));
     // Subcribe the reference signal
-    server_cmd = nh.subscribe<std_msgs::String>(
-        "/happymoon/server_cmd", 10,
+    server_cmd_sub = nh.subscribe<std_msgs::String>(
+        "/happymoon/server_cmd", 1,
         boost::bind(&HappyMoonControl::serverCmdCallback, this, _1));
     // VIO nav msg sub
-    vision_odom = nh.subscribe<nav_msgs::Odometry>(
-        "/vins_estimator/imu_propagate", 10,
+    vision_odom_sub = nh.subscribe<nav_msgs::Odometry>(
+        "/vins_estimator/imu_propagate", 1,
         boost::bind(&HappyMoonControl::stateEstimateCallback, this, _1),
         ros::VoidConstPtr(), ros::TransportHints().tcpNoDelay());
     // TofSense msg sub
-    tofsense_dis = nh.subscribe<happymoon_quad_control::TofsenseFrame0>(
-        "/nlink_tofsense_frame0", 10,
+    tofsense_dis_sub = nh.subscribe<happymoon_quad_control::TofsenseFrame0>(
+        "/nlink_tofsense_frame0", 1,
         boost::bind(&HappyMoonControl::tofSenseCallback, this, _1));
-    // DJI imu msg sub
-    dji_imu = nh.subscribe<sensor_msgs::Imu>(
-        "/djiros/imu", 10,
-        boost::bind(&HappyMoonControl::djiImuCallback, this, _1));
+    // imu msg sub
+    imu_data_sub = nh.subscribe<sensor_msgs::Imu>(
+        "/mavros/imu/data_raw", 1,
+        boost::bind(&HappyMoonControl::ImuCallback, this, _1));
+    // PX4 state sub
+    state_sub = nh.subscribe<mavros_msgs::State>(
+        "/mavros/state", 1, 
+        boost::bind(&HappyMoonControl::state_cb, this, _1));
+
+    //service
+    arming_client = nh.serviceClient<mavros_msgs::CommandBool>
+            ("/mavros/cmd/arming");
+    set_mode_client = nh.serviceClient<mavros_msgs::SetMode>
+            ("/mavros/set_mode");   
 
     // thread
     run_behavior_thread_ =
@@ -62,45 +79,19 @@ namespace happymoon_control
   void HappyMoonControl::runBehavior(void)
   {
     ros::NodeHandle n;
-    ros::Rate rate(100.0);
+    ros::Rate rate(50.0);
+
     while (n.ok())
     {
-      djiFlightControl flight_ctrl;
-      uint32_t ctrl_priority = 0;
-
-      tf::Quaternion quat;
-      tf::quaternionMsgToTF(imu_data.orientation, quat);
-      double roll, pitch, yaw;
-      tf::Matrix3x3(quat).getRPY(roll, pitch, yaw);
-      ROS_INFO("Roll=%f,pitch=%f,yaw=%f,height=%f", roll * 57.3, pitch * 57.3, yaw * 57.3, height_dis);
-
-      if (!ctrl_arbiter_ptr_->getHighestPriorityCtrl(&ctrl_priority,
-                                                     &flight_ctrl))
-      {
-        setZeroCtrl(&flight_ctrl);
-      }
-
-      if ((fabs(roll) > 0.6) || (fabs(pitch) > 0.6) || stop_quad)
-      {
-        setZeroCtrl(&flight_ctrl);
-        stop_quad = true;
-        ROS_ERROR("WARNING: The quadcopter has turned sideways ");
-      }
-
-      ROS_INFO("roll:%f,pitch:%f,THRUST:%f,YawRate:%f", flight_ctrl.pitch,
-               flight_ctrl.roll, flight_ctrl.thrust, flight_ctrl.yawrate);
-
-      sensor_msgs::Joy ctrlAngleThrustData;
-      ctrlAngleThrustData.header.stamp = ros::Time::now();
-      ctrlAngleThrustData.header.frame_id = std::string("FRD");
-      ctrlAngleThrustData.axes.push_back(flight_ctrl.pitch);   // roll
-      ctrlAngleThrustData.axes.push_back(flight_ctrl.roll);    // pitch
-      ctrlAngleThrustData.axes.push_back(flight_ctrl.thrust);  // thrust
-      ctrlAngleThrustData.axes.push_back(flight_ctrl.yawrate); // yawRate
-      ctrlAngleThrust.publish(ctrlAngleThrustData);
-
+      ros::spinOnce();
       rate.sleep();
     }
+  }
+
+  
+  void HappyMoonControl::state_cb(const mavros_msgs::State::ConstPtr& msg){
+      current_state = *msg;
+      // std::cout << current_state << std::endl;
   }
 
   void HappyMoonControl::tofSenseCallback(
@@ -113,7 +104,7 @@ namespace happymoon_control
     height_dis = msg->dis;
   }
 
-  void HappyMoonControl::djiImuCallback(
+  void HappyMoonControl::ImuCallback(
       const sensor_msgs::Imu::ConstPtr &imu_msg)
   {
     if (imu_msg == nullptr)
@@ -128,32 +119,36 @@ namespace happymoon_control
 
   void HappyMoonControl::joyStickCallback(const sensor_msgs::Joy::ConstPtr &joy)
   {
-    djiFlightControl joy_ctrl;
+    if(joy == nullptr) return;
 
-    joy_ctrl.pitch = 0;
-    joy_ctrl.roll = 0;
-    joy_ctrl.thrust = 0;
-    joy_ctrl.yawrate = 0;
-    if (joy == nullptr)
-    {
-      return;
-    }
-    if ((0 == joy->buttons[0]) && (0 == joy->buttons[2]))
-    {
-      ctrl_arbiter_ptr_->setActiveFlagByPriority(JOY_STICK_PRIO_IDX, false);
-      ctrl_arbiter_ptr_->setCtrlByPriority(JOY_STICK_PRIO_IDX, &joy_ctrl);
-      return;
-    }
     if (1 == joy->buttons[0])
     {
-      joy_ctrl.pitch = joy->axes[3] * 10;
-      joy_ctrl.roll = joy->axes[4] * 10;
-      joy_ctrl.thrust = (joy->axes[1] + 1.0) * 25;
-      joy_ctrl.yawrate = -joy->axes[0] * 50;
-      ROS_DEBUG("roll:%f,pitch:%f,THRUST:%f,YawRate:%f", -joy->axes[3] * 10,
-                joy->axes[4] * 10, (joy->axes[1] + 1.0) * 25, joy->axes[0] * 50);
-      ctrl_arbiter_ptr_->setActiveFlagByPriority(JOY_STICK_PRIO_IDX, true);
-      ctrl_arbiter_ptr_->setCtrlByPriority(JOY_STICK_PRIO_IDX, &joy_ctrl);
+      arm_cmd.request.value = true;
+      arming_client.call(arm_cmd);
+      if( arm_cmd.response.success)
+      {
+        ROS_INFO("Vehicle armed");
+      }
+    }
+    
+    if(1 == joy->buttons[1])
+    {
+      set_mode.request.custom_mode = "STABILIZED";
+      set_mode_client.call(set_mode);
+      if(set_mode.response.mode_sent)
+      {
+        ROS_INFO("mode sent successful");
+      }
+    }
+
+    if(1 == joy->buttons[2])
+    {
+      arm_cmd.request.value = false;
+      arming_client.call(arm_cmd);
+      if( arm_cmd.response.success)
+      {
+        ROS_INFO("Vehicle unarmed");
+      }
     }
   }
 
@@ -207,14 +202,15 @@ namespace happymoon_control
     QuadStateReferenceData happymoon_state_reference;
     happymoon_state_estimate = QuadStateEstimate(*msg);
     happymoon_state_reference =
-        QuadReferenceState(happymoon_reference, happymoon_state_estimate);
+        QuadReferenceState(happymoon_reference, happymoon_state_estimate,happymoon_config);
     ControlRun(happymoon_state_estimate, happymoon_state_reference,
                happymoon_config);
   }
 
   QuadStateReferenceData
   HappyMoonControl::QuadReferenceState(HappymoonReference ref_msg,
-                                       QuadStateEstimateData est_msg)
+                                       QuadStateEstimateData est_msg,
+                                       const PositionControllerParams &config)
   {
     QuadStateReferenceData happymoon_reference_state;
     happymoon_reference_state.position.x() = ref_msg.position.x();
@@ -224,12 +220,20 @@ namespace happymoon_control
     happymoon_reference_state.velocity.x() =
         happymoon_config.refVelXYKp *
         (ref_msg.position.x() - est_msg.position.x());
+    mathcommon_.limit(&happymoon_reference_state.velocity.x(), 
+        -config.ref_vxy_error_max, config.ref_vxy_error_max);
+
     happymoon_reference_state.velocity.y() =
         happymoon_config.refVelXYKp *
         (ref_msg.position.y() - est_msg.position.y());
+    mathcommon_.limit(&happymoon_reference_state.velocity.y(), 
+        -config.ref_vxy_error_max, config.ref_vxy_error_max);
+
     happymoon_reference_state.velocity.z() =
         happymoon_config.refVelZKp *
         (ref_msg.position.z() - est_msg.position.z());
+    mathcommon_.limit(&happymoon_reference_state.velocity.z(), 
+        -config.ref_vz_error_max, config.ref_vz_error_max);
 
     return happymoon_reference_state;
   }
@@ -262,6 +266,7 @@ namespace happymoon_control
     // Compute desired control commands
     const Eigen::Vector3d pid_error_accelerations =
         computePIDErrorAcc(state_estimate, state_reference, config);
+    // std::cout << "pid_error_accelerations: " << std::endl << pid_error_accelerations << std::endl;
     const Eigen::Vector3d desired_acceleration =
         pid_error_accelerations - kGravity_;
     command.collective_thrust = computeDesiredCollectiveMassNormalizedThrust(
@@ -271,16 +276,36 @@ namespace happymoon_control
                                state_estimate.orientation);
     const Eigen::Vector3d desired_r_p_y =
         mathcommon_.quaternionToEulerAnglesZYX(desired_attitude);
+    geometry_msgs::Vector3 desired_r_p_y_rate;
+    desired_r_p_y_rate.x = 0.5 * desired_r_p_y.x();
+    desired_r_p_y_rate.y = 0.5 * desired_r_p_y.y();
+    desired_r_p_y_rate.z = 0.2 * desired_r_p_y.z();
 
-    djiFlightControl nav_ctrl;
-    nav_ctrl.pitch = desired_r_p_y.x();
-    nav_ctrl.roll = desired_r_p_y.y();
-    nav_ctrl.thrust = command.collective_thrust;
-    nav_ctrl.yawrate = config.kyaw * desired_r_p_y.z();
-    ROS_DEBUG("roll:%f,pitch:%f,THRUST:%f,YawRate:%f", nav_ctrl.pitch,
-              nav_ctrl.roll, nav_ctrl.thrust, nav_ctrl.yawrate);
-    ctrl_arbiter_ptr_->setActiveFlagByPriority(NAV_PRIO_IDX, true);
-    ctrl_arbiter_ptr_->setCtrlByPriority(NAV_PRIO_IDX, &nav_ctrl);
+    ROS_INFO("command.collective_thrust :%f",command.collective_thrust);
+
+    mavros_msgs::AttitudeTarget expect_px;
+
+    if(current_state.armed && current_state.mode == "OFFBOARD"){
+      expect_px.header.frame_id = "base_link";
+      expect_px.header.stamp = ros::Time::now();
+      // expect_px.type_mask = 7;
+      expect_px.orientation = geometryToEigen_.eigenToGeometry(desired_attitude);
+      expect_px.body_rate = desired_r_p_y_rate;
+
+      // [0.13018744 0.12771589]
+      #define realquad
+      #ifdef realquad
+        expect_px.thrust = 1.2 * (0.13018744 * command.collective_thrust/7.1 + 0.12771589);
+        ROS_ERROR("expect_px.thrust  :%f",expect_px.thrust);
+      #endif
+    }else{
+      expect_px.header.frame_id = "base_link";
+      expect_px.header.stamp = ros::Time::now();
+      expect_px.orientation = geometryToEigen_.eigenToGeometry(desired_attitude);
+      expect_px.body_rate = desired_r_p_y_rate;
+      expect_px.thrust = 0;
+    }
+    ctrlExpectAngleThrustPX4.publish(expect_px);
   }
 
   Eigen::Vector3d HappyMoonControl::computePIDErrorAcc(
@@ -340,6 +365,10 @@ namespace happymoon_control
     if (normalized_thrust < kMinNormalizedCollectiveThrust_)
     {
       normalized_thrust = kMinNormalizedCollectiveThrust_;
+    }
+    if (normalized_thrust > kMaxNormalizedCollectiveThrust_)
+    {
+      normalized_thrust = kMaxNormalizedCollectiveThrust_;
     }
     return normalized_thrust;
   }
