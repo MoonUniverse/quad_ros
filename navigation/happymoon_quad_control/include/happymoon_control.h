@@ -84,6 +84,8 @@ struct PositionControllerParams {
   double refVelHeadingKp;
   double refVelRateheadingKp;
 
+  double ref_vxy_error_max; //[m/s]
+  double ref_vz_error_max; //[m/s]
   double pxy_error_max; // [m]
   double vxy_error_max; // [m/s]
   double pz_error_max;  // [m]
@@ -122,7 +124,8 @@ private:
   void ImuCallback(const sensor_msgs::Imu::ConstPtr &imu_msg);
   Eigen::Vector3d geometryToEigen(const geometry_msgs::Point &vec_ros);
   QuadStateReferenceData QuadReferenceState(HappymoonReference ref_msg,
-                                            QuadStateEstimateData est_msg);
+                                            QuadStateEstimateData est_msg, 
+                                            const PositionControllerParams &config);
   QuadStateEstimateData QuadStateEstimate(const nav_msgs::Odometry &msg);
   void ControlRun(const QuadStateEstimateData &state_estimate,
                   const QuadStateReferenceData &state_reference,
@@ -192,7 +195,8 @@ private:
 
   // Constants
   const Eigen::Vector3d kGravity_ = Eigen::Vector3d(0.0, 0.0, -9.81);
-  static constexpr double kMinNormalizedCollectiveThrust_ = 1.0;
+  static constexpr double kMinNormalizedCollectiveThrust_ = 9.81;
+  static constexpr double kMaxNormalizedCollectiveThrust_ = 15.0; 
   static constexpr double kAlmostZeroValueThreshold_ = 0.001;
   static constexpr double kAlmostZeroThrustThreshold_ = 0.01;
 

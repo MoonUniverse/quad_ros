@@ -1,29 +1,32 @@
-kpxy: 1.0
-kdxy: 2.0
+kpxy: 3.0
+kdxy: 3.0
 
-kpz: 8.0
-kdz: 6.0
+kpz: 5.0
+kdz: 8.0
 krp: 12.0
-kyaw: 5.0
+kyaw: 4.0
 
 refVelXYKp: 0.5
 refVelZKp: 0.5
 refVelHeadingKp: 0.5
 refVelRateheadingKp: 0.5
 
-pxy_error_max: 1.0
+
+ref_vxy_error_max: 0.5
+ref_vz_error_max: 0.5
+pxy_error_max: 0.6
 vxy_error_max: 0.5
-pz_error_max: 0.6
-vz_error_max: 1.2
+pz_error_max: 0.3
+vz_error_max: 0.5
 yaw_error_max: 0.7
 
 k_drag_x: 0.0
 k_drag_y: 0.0
 k_drag_z: 0.0
-k_thrust_horz: 0.0
+k_thrust_horz: 15.07
 
 ref_pos_x: 0.0
 ref_pos_y: 0.0
-ref_pos_z: 1.0
+ref_pos_z: 3.0
 ref_head: 0.0
 ref_head_rate: 0.0

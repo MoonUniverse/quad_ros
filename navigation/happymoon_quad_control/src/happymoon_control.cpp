@@ -18,11 +18,14 @@ namespace happymoon_control
     nh.param("refVelHeadingKp", happymoon_config.refVelHeadingKp, 0.5);
     nh.param("refVelRateheadingKp", happymoon_config.refVelRateheadingKp, 0.5);
 
+    nh.param("ref_vxy_error_max", happymoon_config.ref_vxy_error_max, 0.5);
+    nh.param("ref_vz_error_max", happymoon_config.ref_vz_error_max, 0.5);
     nh.param("pxy_error_max", happymoon_config.pxy_error_max, 0.6);
     nh.param("vxy_error_max", happymoon_config.vxy_error_max, 1.0);
     nh.param("pz_error_max", happymoon_config.pz_error_max, 0.3);
     nh.param("vz_error_max", happymoon_config.vz_error_max, 0.75);
     nh.param("yaw_error_max", happymoon_config.yaw_error_max, 0.7);
+    nh.param("k_thrust_horz", happymoon_config.k_thrust_horz, 1.0);
 
     nh.param("ref_pos_x", happymoon_reference.position.x(), 0.0);
     nh.param("ref_pos_y", happymoon_reference.position.y(), 0.0);
@@ -80,10 +83,6 @@ namespace happymoon_control
 
     while (n.ok())
     {
-
-      
-
-
       ros::spinOnce();
       rate.sleep();
     }
@@ -203,14 +202,15 @@ namespace happymoon_control
     QuadStateReferenceData happymoon_state_reference;
     happymoon_state_estimate = QuadStateEstimate(*msg);
     happymoon_state_reference =
-        QuadReferenceState(happymoon_reference, happymoon_state_estimate);
+        QuadReferenceState(happymoon_reference, happymoon_state_estimate,happymoon_config);
     ControlRun(happymoon_state_estimate, happymoon_state_reference,
                happymoon_config);
   }
 
   QuadStateReferenceData
   HappyMoonControl::QuadReferenceState(HappymoonReference ref_msg,
-                                       QuadStateEstimateData est_msg)
+                                       QuadStateEstimateData est_msg,
+                                       const PositionControllerParams &config)
   {
     QuadStateReferenceData happymoon_reference_state;
     happymoon_reference_state.position.x() = ref_msg.position.x();
@@ -220,12 +220,20 @@ namespace happymoon_control
     happymoon_reference_state.velocity.x() =
         happymoon_config.refVelXYKp *
         (ref_msg.position.x() - est_msg.position.x());
+    mathcommon_.limit(&happymoon_reference_state.velocity.x(), 
+        -config.ref_vxy_error_max, config.ref_vxy_error_max);
+
     happymoon_reference_state.velocity.y() =
         happymoon_config.refVelXYKp *
         (ref_msg.position.y() - est_msg.position.y());
+    mathcommon_.limit(&happymoon_reference_state.velocity.y(), 
+        -config.ref_vxy_error_max, config.ref_vxy_error_max);
+
     happymoon_reference_state.velocity.z() =
         happymoon_config.refVelZKp *
         (ref_msg.position.z() - est_msg.position.z());
+    mathcommon_.limit(&happymoon_reference_state.velocity.z(), 
+        -config.ref_vz_error_max, config.ref_vz_error_max);
 
     return happymoon_reference_state;
   }
@@ -258,6 +266,7 @@ namespace happymoon_control
     // Compute desired control commands
     const Eigen::Vector3d pid_error_accelerations =
         computePIDErrorAcc(state_estimate, state_reference, config);
+    // std::cout << "pid_error_accelerations: " << std::endl << pid_error_accelerations << std::endl;
     const Eigen::Vector3d desired_acceleration =
         pid_error_accelerations - kGravity_;
     command.collective_thrust = computeDesiredCollectiveMassNormalizedThrust(
@@ -281,7 +290,18 @@ namespace happymoon_control
       expect_px.type_mask = 7;
       expect_px.orientation = geometryToEigen_.eigenToGeometry(desired_attitude);
       expect_px.body_rate = desired_r_p_y_rate;
-      expect_px.thrust = command.collective_thrust / 10;
+      #define simulation
+      #ifdef simulation
+        expect_px.thrust = command.collective_thrust / config.k_thrust_horz;
+        ROS_ERROR("expect_px.thrust  :%f",expect_px.thrust);
+      #endif
+
+      // [0.13018744 0.12771589]
+      // #define realquad
+      #ifdef realquad
+        expect_px.thrust = config.k_thrust_horz * (0.13018744 * command.collective_thrust/7.1 + 0.12771589);
+        ROS_ERROR("expect_px.thrust  :%f",expect_px.thrust);
+      #endif
     }else{
       expect_px.header.frame_id = "base_link";
       expect_px.header.stamp = ros::Time::now();
@@ -349,6 +369,10 @@ namespace happymoon_control
     if (normalized_thrust < kMinNormalizedCollectiveThrust_)
     {
       normalized_thrust = kMinNormalizedCollectiveThrust_;
+    }
+    if (normalized_thrust > kMaxNormalizedCollectiveThrust_)
+    {
+      normalized_thrust = kMaxNormalizedCollectiveThrust_;
     }
     return normalized_thrust;
   }
