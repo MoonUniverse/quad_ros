@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(vins)
+project(vins_estimator)
 
 set(CMAKE_BUILD_TYPE "Release")
 set(CMAKE_CXX_FLAGS "-std=c++11")
@@ -13,8 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
     nav_msgs
     tf
     cv_bridge
-    camera_models
-    image_transport)
+    )
 
 find_package(OpenCV REQUIRED)
 
@@ -33,14 +32,14 @@ include_directories(
 
 catkin_package()
 
-add_library(vins_lib
-    src/estimator/parameters.cpp
-    src/estimator/estimator.cpp
-    src/estimator/feature_manager.cpp
+add_executable(vins_estimator
+    src/estimator_node.cpp
+    src/parameters.cpp
+    src/estimator.cpp
+    src/feature_manager.cpp
     src/factor/pose_local_parameterization.cpp
-    src/factor/projectionTwoFrameOneCamFactor.cpp
-    src/factor/projectionTwoFrameTwoCamFactor.cpp
-    src/factor/projectionOneFrameTwoCamFactor.cpp
+    src/factor/projection_factor.cpp
+    src/factor/projection_td_factor.cpp
     src/factor/marginalization_factor.cpp
     src/utility/utility.cpp
     src/utility/visualization.cpp
@@ -49,16 +48,9 @@ add_library(vins_lib
     src/initial/initial_aligment.cpp
     src/initial/initial_sfm.cpp
     src/initial/initial_ex_rotation.cpp
-    src/featureTracker/feature_tracker.cpp)
-target_link_libraries(vins_lib ${catkin_LIBRARIES} ${OpenCV_LIBS} ${CERES_LIBRARIES})
+    )
 
 
-add_executable(vins_node src/rosNodeTest.cpp)
-target_link_libraries(vins_node vins_lib) 
+target_link_libraries(vins_estimator ${catkin_LIBRARIES} ${OpenCV_LIBS} ${CERES_LIBRARIES}) 
 
-#add_executable(kitti_odom_test src/KITTIOdomTest.cpp)
-#target_link_libraries(kitti_odom_test vins_lib) 
-
-#add_executable(kitti_gps_test src/KITTIGPSTest.cpp)
-#target_link_libraries(kitti_gps_test vins_lib) 
 
