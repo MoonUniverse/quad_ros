@@ -25,7 +25,7 @@ def readParameters():
     parser.add_argument('--H', type=int, default=480,
         help='Input image height (default: 120).')
     
-    parser.add_argument('--W', type=int, default=752,
+    parser.add_argument('--W', type=int, default=640,
         help='Input image width (default:752 / 640).')
     
     parser.add_argument('--scale', type=int, default=2,

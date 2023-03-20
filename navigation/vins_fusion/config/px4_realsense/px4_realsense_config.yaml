@@ -2,7 +2,7 @@
 
 #common parameters
 imu_topic: "/mavros/imu/data_raw"
-image_topic: "/camera/infra1/image_rect_raw"
+image_topic: ""
 output_path: ""
 
 #camera calibration 
