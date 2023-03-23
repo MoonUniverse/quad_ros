@@ -1,8 +1,5 @@
 import sys
-#sys.path.remove('/opt/ros/kinetic/lib/python2.7/dist-packages')
 import cv2
-#sys.path.append('/opt/ros/kinetic/lib/python2.7/dist-packages')
-
 import copy
 import rospy
 import torch
@@ -28,10 +25,12 @@ prev_un_pts_map = {}
 
 cur_time = 0.0
 prev_time = 0.0
+
+
 def img_callback(img_msg, param):
-      
-    global prev_un_pts_map,cur_un_pts_map,cur_time,prev_time
-    
+
+    global prev_un_pts_map, cur_un_pts_map, cur_time, prev_time
+
     cur_time = img_msg.header.stamp.to_sec()
 
     bridge = CvBridge()
@@ -45,7 +44,7 @@ def img_callback(img_msg, param):
 
     param.readImage(cur_img)
 
-    if True :
+    if True:
 
         feature_points = PointCloud()
         id_of_point = ChannelFloat32()
@@ -57,38 +56,40 @@ def img_callback(img_msg, param):
         feature_points.header = img_msg.header
         feature_points.header.frame_id = "world"
 
-        cur_un_pts, cur_pts, ids = param.undistortedLineEndPoints( scale=param.scale )
+        cur_un_pts, cur_pts, ids = param.undistortedLineEndPoints(
+            scale=param.scale)
 
         for j in range(len(ids)):
             un_pts = Point32()
-            un_pts.x = cur_un_pts[0,j]
-            un_pts.y = cur_un_pts[1,j]
-            un_pts.z = 1                
+            un_pts.x = cur_un_pts[0, j]
+            un_pts.y = cur_un_pts[1, j]
+            un_pts.z = 1
 
             feature_points.points.append(un_pts)
             id_of_point.values.append(ids[j])
             camera_id.values.append(0.0)
-            u_of_point.values.append(cur_pts[0,j])
-            v_of_point.values.append(cur_pts[1,j])
-            
+            u_of_point.values.append(cur_pts[0, j])
+            v_of_point.values.append(cur_pts[1, j])
+
             cur_un_pts_map[ids[j]] = un_pts
 
-
         if len(prev_un_pts_map) == 0:
-          for index in range(len(cur_un_pts_map)):
-            velocity_x_of_point.values.append(0.0)
-            velocity_y_of_point.values.append(0.0)
-        else:
-          dt = cur_time - prev_time
-          for i in range(len(ids)):
-              if ids[i] in prev_un_pts_map:
-                  v_x = (cur_un_pts_map[ids[i]].x - prev_un_pts_map[ids[i]].x) / dt
-                  v_y = (cur_un_pts_map[ids[i]].y - prev_un_pts_map[ids[i]].y) / dt
-                  velocity_x_of_point.values.append(v_x)
-                  velocity_y_of_point.values.append(v_y)
-              else:
+            for index in range(len(cur_un_pts_map)):
                 velocity_x_of_point.values.append(0.0)
                 velocity_y_of_point.values.append(0.0)
+        else:
+            dt = cur_time - prev_time
+            for i in range(len(ids)):
+                if ids[i] in prev_un_pts_map:
+                    v_x = (cur_un_pts_map[ids[i]].x -
+                           prev_un_pts_map[ids[i]].x) / dt
+                    v_y = (cur_un_pts_map[ids[i]].y -
+                           prev_un_pts_map[ids[i]].y) / dt
+                    velocity_x_of_point.values.append(v_x)
+                    velocity_y_of_point.values.append(v_y)
+                else:
+                    velocity_x_of_point.values.append(0.0)
+                    velocity_y_of_point.values.append(0.0)
 
         feature_points.channels.append(id_of_point)
         feature_points.channels.append(camera_id)
@@ -96,7 +97,7 @@ def img_callback(img_msg, param):
         feature_points.channels.append(v_of_point)
         feature_points.channels.append(velocity_x_of_point)
         feature_points.channels.append(velocity_y_of_point)
-        
+
         prev_un_pts_map = cur_un_pts_map.copy()
         prev_time = cur_time
 
@@ -125,28 +126,25 @@ def img_callback(img_msg, param):
 
 if __name__ == '__main__':
 
-  rospy.init_node('feature_tracker', anonymous=False)
+    rospy.init_node('feature_tracker', anonymous=False)
 
-  ############## 加载参数 #################
-  Option_Param = readParameters()
-  print(Option_Param)
+    ############## 加载参数 #################
+    Option_Param = readParameters()
+    print(Option_Param)
 
-#   CamearIntrinsicParam = PinholeCamera(
-#       fx = 461.6, fy = 460.3, cx = 363.0, cy = 248.1, 
-#       k1 = -2.917e-01, k2 = 8.228e-02, p1 = 5.333e-05, p2 = -1.578e-04
-#       )  
-
-  CamearIntrinsicParam = PinholeCamera(
-      fx = 378.60955810546875, fy = 378.60955810546875, cx = 315.99139404296875, cy = 231.82102966308594, 
-      k1 = 0.0, k2 = 0.0, p1 = 0.0, p2 = 0.0
-      )
-  FeatureParameters = VisualTracker(Option_Param, CamearIntrinsicParam)
+    CamearIntrinsicParam = PinholeCamera(
+        fx=378.60955810546875, fy=378.60955810546875, cx=315.99139404296875, cy=231.82102966308594,
+        k1=0.0, k2=0.0, p1=0.0, p2=0.0
+    )
+    FeatureParameters = VisualTracker(Option_Param, CamearIntrinsicParam)
 
 #   sub_img = rospy.Subscriber("/mynteye/left/image_color", Image, img_callback, FeatureParameters,  queue_size=100) /camera/infra1/image_rect_raw /cam0/image_raw
-  sub_img = rospy.Subscriber("/camera/infra1/image_rect_raw", Image, img_callback, FeatureParameters,  queue_size=100) 
- 
+    sub_img = rospy.Subscriber("/camera/infra1/image_rect_raw",
+                               Image, img_callback, FeatureParameters,  queue_size=100)
 
-  pub_img = rospy.Publisher("/feature_tracker/feature", PointCloud, queue_size=1000)
-  pub_match = rospy.Publisher("/feature_tracker/feature_img", Image, queue_size=1000)
+    pub_img = rospy.Publisher(
+        "/feature_tracker/feature", PointCloud, queue_size=1000)
+    pub_match = rospy.Publisher(
+        "/feature_tracker/feature_img", Image, queue_size=1000)
 
-  rospy.spin()
+    rospy.spin()
