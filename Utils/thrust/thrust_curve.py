@@ -2,9 +2,6 @@
 # import matplotlib as mpl
 # import matplotlib.pyplot as plt
 # from numpy import polyfit, poly1d
-
-
-
 # fig, ax = plt.subplots()
 # ax.plot(x, y, 'rx')
 # ax.set_xlabel('x')
