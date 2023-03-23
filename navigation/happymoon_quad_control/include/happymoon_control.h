@@ -9,15 +9,15 @@
 // ROS includes
 #include <geometry_msgs/Point.h>
 #include <geometry_msgs/Pose.h>
+#include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Quaternion.h>
 #include <geometry_msgs/QuaternionStamped.h>
-#include <geometry_msgs/PoseStamped.h>
-#include <mavros_msgs/CommandBool.h>
-#include <mavros_msgs/SetMode.h>
-#include <mavros_msgs/State.h>
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/Vector3.h>
 #include <geometry_msgs/Vector3Stamped.h>
+#include <mavros_msgs/CommandBool.h>
+#include <mavros_msgs/SetMode.h>
+#include <mavros_msgs/State.h>
 #include <nav_msgs/Odometry.h>
 #include <ros/ros.h>
 #include <sensor_msgs/Imu.h>
@@ -29,8 +29,8 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/thread.hpp>
 #include <happymoon_quad_control/TofsenseFrame0.h>
-#include <mavros_msgs/ManualControl.h>
 #include <mavros_msgs/AttitudeTarget.h>
+#include <mavros_msgs/ManualControl.h>
 
 #include <eigen3/Eigen/Dense>
 
@@ -85,12 +85,12 @@ struct PositionControllerParams {
   double refVelRateheadingKp;
 
   double ref_vxy_error_max; //[m/s]
-  double ref_vz_error_max; //[m/s]
-  double pxy_error_max; // [m]
-  double vxy_error_max; // [m/s]
-  double pz_error_max;  // [m]
-  double vz_error_max;  // [m/s]
-  double yaw_error_max; // [rad]
+  double ref_vz_error_max;  //[m/s]
+  double pxy_error_max;     // [m]
+  double vxy_error_max;     // [m/s]
+  double pz_error_max;      // [m]
+  double vz_error_max;      // [m/s]
+  double yaw_error_max;     // [rad]
 
   // Whether or not to compensate for aerodynamic effects
   double k_drag_x; // x-direction rotor drag coefficient
@@ -123,9 +123,9 @@ private:
   tofSenseCallback(const happymoon_quad_control::TofsenseFrame0::ConstPtr &msg);
   void ImuCallback(const sensor_msgs::Imu::ConstPtr &imu_msg);
   Eigen::Vector3d geometryToEigen(const geometry_msgs::Point &vec_ros);
-  QuadStateReferenceData QuadReferenceState(HappymoonReference ref_msg,
-                                            QuadStateEstimateData est_msg, 
-                                            const PositionControllerParams &config);
+  QuadStateReferenceData
+  QuadReferenceState(HappymoonReference ref_msg, QuadStateEstimateData est_msg,
+                     const PositionControllerParams &config);
   QuadStateEstimateData QuadStateEstimate(const nav_msgs::Odometry &msg);
   void ControlRun(const QuadStateEstimateData &state_estimate,
                   const QuadStateReferenceData &state_reference,
@@ -154,7 +154,7 @@ private:
   bool almostZero(const double value);
   bool almostZeroThrust(const double thrust_value);
 
-  void state_cb(const mavros_msgs::State::ConstPtr& msg);
+  void state_cb(const mavros_msgs::State::ConstPtr &msg);
 
   void runBehavior(void);
 
@@ -172,7 +172,6 @@ private:
 
   ros::ServiceClient arming_client;
   ros::ServiceClient set_mode_client;
-  
 
   mutable std::mutex main_mutex_;
   std::thread *run_behavior_thread_;
@@ -195,7 +194,7 @@ private:
   // Constants
   const Eigen::Vector3d kGravity_ = Eigen::Vector3d(0.0, 0.0, -9.81);
   static constexpr double kMinNormalizedCollectiveThrust_ = 8.0;
-  static constexpr double kMaxNormalizedCollectiveThrust_ = 15.0; 
+  static constexpr double kMaxNormalizedCollectiveThrust_ = 15.0;
   static constexpr double kAlmostZeroValueThreshold_ = 0.001;
   static constexpr double kAlmostZeroThrustThreshold_ = 0.01;
 
