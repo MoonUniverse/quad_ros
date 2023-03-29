@@ -34,6 +34,9 @@ include_directories(
 catkin_package()
 
 add_library(vins_lib
+    src/efficientDescriptors/BAD.cpp
+    src/efficientDescriptors/HashSIFT.cpp
+    src/efficientDescriptors/PatchSIFT.cpp
     src/estimator/parameters.cpp
     src/estimator/estimator.cpp
     src/estimator/feature_manager.cpp
