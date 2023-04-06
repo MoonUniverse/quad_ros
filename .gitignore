@@ -1,2 +1,4 @@
-.vscode
+.vscode/
 /CMakeLists.txt
+navigation/vins_fusion/visual_front/utils/__pycache__/
+navigation/vins_fusion/visual_front/__pycache__/
