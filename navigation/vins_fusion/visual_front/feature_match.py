@@ -48,29 +48,10 @@ class VisualTracker:
         self.nms_dist = opts.nms_dist
         self.nn_thresh = opts.nn_thresh
         self.no_display = opts.no_display
-        self.width = opts.W // opts.scale
-        self.height = opts.H // opts.scale
+        self.width = opts.W
+        self.height = opts.H
         self.conf_thresh = opts.conf_thresh
         self.weights_path = opts.weights_path
-
-        # SuperPointFrontend_torch SuperPointFrontend
-        self.SuperPoint_Ghostnet = SuperPointFrontend_torch(
-            weights_path=self.weights_path,
-            nms_dist=self.nms_dist,
-            conf_thresh=self.conf_thresh,
-            cuda=self.cuda
-        )
-
-        config = {
-            'superglue': {
-                'weights': 'indoor',
-                'sinkhorn_iterations': 100,
-                'match_threshold': 0.2,
-            }
-        }
-        self.SuperGlue = SuperGlue(config)
-
-        self.tracker = PointTracker(nn_thresh=self.nn_thresh)
 
     def undistortedLineEndPoints(self, scale):
 
@@ -123,12 +104,6 @@ class VisualTracker:
         keyPoint_size = self.forwframe_['keyPoint'].shape[1]
         print("current keypoint size is :", keyPoint_size)
 
-        if keyPoint_size < self.max_cnt-50:
-            self.forwframe_['keyPoint'], self.forwframe_[
-                'descriptor'], heatmap = self.SuperPoint_Ghostnet.run(self.new_frame, conf_thresh=0.01)
-            keyPoint_size = self.forwframe_['keyPoint'].shape[1]
-            print("next keypoint size is ", keyPoint_size)
-
         for _ in range(keyPoint_size):
             if first_image_flag == True:
                 self.forwframe_['PointID'].append(self.allfeature_cnt)
@@ -148,10 +123,10 @@ class VisualTracker:
             match_time = time()-start_time
             print("match time is :", match_time)
             print("match size is :", feature_matches.shape[1])
-            # ######################## 保证匹配得到的lineID相同 #####################
-            # for k in range(feature_matches.shape[1]):
-            #     self.forwframe_['PointID'][feature_matches[0, k]] = self.curframe_[
-            #         'PointID'][feature_matches[1, k]]
+            ######################## 保证匹配得到的lineID相同 #####################
+            for k in range(feature_matches.shape[1]):
+                self.forwframe_['PointID'][feature_matches[0, k]] = self.curframe_[
+                    'PointID'][feature_matches[1, k]]
 
             # ################### 将跟踪的点与没跟踪的点进行区分 #####################
             # vecPoint_new = np.zeros((3, 0))
