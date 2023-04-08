@@ -507,8 +507,8 @@ class PointTracker(object):
             raise ValueError('\'nn_thresh\' should be non-negative')
         # Compute L2 distance. Easy since vectors are unit normalized.
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        desc1 = torch.from_numpy(desc1).to(device)
-        desc2 = torch.from_numpy(desc2).to(device)
+        desc1 = torch.from_numpy(desc1).float().to(device)
+        desc2 = torch.from_numpy(desc2).float().to(device)
         dmat = torch.matmul(desc1.T, desc2)
         dmat = torch.sqrt(2-2*torch.clamp(dmat, -1, 1))
         # Get NN indices and scores.

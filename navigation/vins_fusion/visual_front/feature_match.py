@@ -5,7 +5,6 @@ from time import time
 
 from utils.feature_process import PointTracker
 from utils.feature_process import SuperPointFrontend_torch, SuperPointFrontend
-from utils.superglue import SuperGlue
 run_time = 0.0
 match_time = 0.0
 
@@ -60,15 +59,6 @@ class VisualTracker:
             conf_thresh=self.conf_thresh,
             cuda=self.cuda
         )
-
-        config = {
-            'superglue': {
-                'weights': 'indoor',
-                'sinkhorn_iterations': 100,
-                'match_threshold': 0.2,
-            }
-        }
-        self.SuperGlue = SuperGlue(config)
 
         self.tracker = PointTracker(nn_thresh=self.nn_thresh)
 
@@ -148,57 +138,57 @@ class VisualTracker:
             match_time = time()-start_time
             print("match time is :", match_time)
             print("match size is :", feature_matches.shape[1])
-            # ######################## 保证匹配得到的lineID相同 #####################
-            # for k in range(feature_matches.shape[1]):
-            #     self.forwframe_['PointID'][feature_matches[0, k]] = self.curframe_[
-            #         'PointID'][feature_matches[1, k]]
+            ######################## 保证匹配得到的lineID相同 #####################
+            for k in range(feature_matches.shape[1]):
+                self.forwframe_['PointID'][feature_matches[0, k]] = self.curframe_[
+                    'PointID'][feature_matches[1, k]]
 
-            # ################### 将跟踪的点与没跟踪的点进行区分 #####################
-            # vecPoint_new = np.zeros((3, 0))
-            # vecPoint_tracked = np.zeros((3, 0))
-            # PointID_new = []
-            # PointID_tracked = []
-            # Descr_new = np.zeros((256, 0))
-            # Descr_tracked = np.zeros((256, 0))
+            ################### 将跟踪的点与没跟踪的点进行区分 #####################
+            vecPoint_new = np.zeros((3, 0))
+            vecPoint_tracked = np.zeros((3, 0))
+            PointID_new = []
+            PointID_tracked = []
+            Descr_new = np.zeros((256, 0))
+            Descr_tracked = np.zeros((256, 0))
 
-            # for i in range(keyPoint_size):
-            #     if self.forwframe_['PointID'][i] == -1:
-            #         self.forwframe_['PointID'][i] = self.allfeature_cnt
-            #         self.allfeature_cnt = self.allfeature_cnt+1
-            #         vecPoint_new = np.append(vecPoint_new, self.forwframe_[
-            #                                  'keyPoint'][:, i:i+1], axis=1)
-            #         PointID_new.append(self.forwframe_['PointID'][i])
-            #         Descr_new = np.append(Descr_new, self.forwframe_[
-            #                               'descriptor'][:, i:i+1], axis=1)
-            #     else:
-            #         vecPoint_tracked = np.append(vecPoint_tracked, self.forwframe_[
-            #                                      'keyPoint'][:, i:i+1], axis=1)
-            #         PointID_tracked.append(self.forwframe_['PointID'][i])
-            #         Descr_tracked = np.append(Descr_tracked, self.forwframe_[
-            #                                   'descriptor'][:, i:i+1], axis=1)
+            for i in range(keyPoint_size):
+                if self.forwframe_['PointID'][i] == -1:
+                    self.forwframe_['PointID'][i] = self.allfeature_cnt
+                    self.allfeature_cnt = self.allfeature_cnt+1
+                    vecPoint_new = np.append(vecPoint_new, self.forwframe_[
+                                             'keyPoint'][:, i:i+1], axis=1)
+                    PointID_new.append(self.forwframe_['PointID'][i])
+                    Descr_new = np.append(Descr_new, self.forwframe_[
+                                          'descriptor'][:, i:i+1], axis=1)
+                else:
+                    vecPoint_tracked = np.append(vecPoint_tracked, self.forwframe_[
+                                                 'keyPoint'][:, i:i+1], axis=1)
+                    PointID_tracked.append(self.forwframe_['PointID'][i])
+                    Descr_tracked = np.append(Descr_tracked, self.forwframe_[
+                                              'descriptor'][:, i:i+1], axis=1)
 
-            # ########### 跟踪的点特征少于150了，那就补充新的点特征 ###############
+            ########### 跟踪的点特征少于150了，那就补充新的点特征 ###############
 
-            # diff_n = self.max_cnt - vecPoint_tracked.shape[1]
-            # if diff_n > 0:
-            #     if vecPoint_new.shape[1] >= diff_n:
-            #         for k in range(diff_n):
-            #             vecPoint_tracked = np.append(
-            #                 vecPoint_tracked, vecPoint_new[:, k:k+1], axis=1)
-            #             PointID_tracked.append(PointID_new[k])
-            #             Descr_tracked = np.append(
-            #                 Descr_tracked, Descr_new[:, k:k+1], axis=1)
-            #     else:
-            #         for k in range(vecPoint_new.shape[1]):
-            #             vecPoint_tracked = np.append(
-            #                 vecPoint_tracked, vecPoint_new[:, k:k+1], axis=1)
-            #             PointID_tracked.append(PointID_new[k])
-            #             Descr_tracked = np.append(
-            #                 Descr_tracked, Descr_new[:, k:k+1], axis=1)
+            diff_n = self.max_cnt - vecPoint_tracked.shape[1]
+            if diff_n > 0:
+                if vecPoint_new.shape[1] >= diff_n:
+                    for k in range(diff_n):
+                        vecPoint_tracked = np.append(
+                            vecPoint_tracked, vecPoint_new[:, k:k+1], axis=1)
+                        PointID_tracked.append(PointID_new[k])
+                        Descr_tracked = np.append(
+                            Descr_tracked, Descr_new[:, k:k+1], axis=1)
+                else:
+                    for k in range(vecPoint_new.shape[1]):
+                        vecPoint_tracked = np.append(
+                            vecPoint_tracked, vecPoint_new[:, k:k+1], axis=1)
+                        PointID_tracked.append(PointID_new[k])
+                        Descr_tracked = np.append(
+                            Descr_tracked, Descr_new[:, k:k+1], axis=1)
 
-            # self.forwframe_['keyPoint'] = vecPoint_tracked
-            # self.forwframe_['PointID'] = PointID_tracked
-            # self.forwframe_['descriptor'] = Descr_tracked
+            self.forwframe_['keyPoint'] = vecPoint_tracked
+            self.forwframe_['PointID'] = PointID_tracked
+            self.forwframe_['descriptor'] = Descr_tracked
 
         if not self.no_display:
             out1 = (np.dstack((self.curframe_['image'], self.curframe_[
