@@ -28,7 +28,7 @@ def readParameters():
     parser.add_argument('--W', type=int, default=640,
         help='Input image width (default:752 / 640).')
     
-    parser.add_argument('--scale', type=int, default=2,
+    parser.add_argument('--scale', type=int, default=1,
         help='Factor to scale output visualization (default: 2).')
     
     parser.add_argument('--nms_dist', type=int, default=4,

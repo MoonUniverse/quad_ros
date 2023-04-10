@@ -140,11 +140,11 @@ if __name__ == '__main__':
 
 #   sub_img = rospy.Subscriber("/mynteye/left/image_color", Image, img_callback, FeatureParameters,  queue_size=100) /camera/infra1/image_rect_raw /cam0/image_raw
     sub_img = rospy.Subscriber("/camera/infra1/image_rect_raw",
-                               Image, img_callback, FeatureParameters,  queue_size=100)
+                               Image, img_callback, FeatureParameters,  queue_size=1)
 
     pub_img = rospy.Publisher(
-        "/feature_tracker/feature", PointCloud, queue_size=1000)
+        "/feature_tracker/feature", PointCloud, queue_size=1)
     pub_match = rospy.Publisher(
-        "/feature_tracker/feature_img", Image, queue_size=1000)
+        "/feature_tracker/feature_img", Image, queue_size=1)
 
     rospy.spin()
