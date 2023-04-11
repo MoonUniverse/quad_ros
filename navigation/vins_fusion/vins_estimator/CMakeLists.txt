@@ -6,6 +6,8 @@ set(CMAKE_CXX_FLAGS "-std=c++11")
 #-DEIGEN_USE_MKL_ALL")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall -g")
 
+set(cv_bridge_DIR /usr/local/cv_bridge_opencv4.5.5/share/cv_bridge/cmake)
+
 find_package(catkin REQUIRED COMPONENTS
     roscpp
     std_msgs
@@ -17,7 +19,7 @@ find_package(catkin REQUIRED COMPONENTS
     image_transport)
 
 #find_package(OpenCV REQUIRED)
-include(/home/dji/opencv/build/OpenCVConfig.cmake)
+include(/home/nvidia/Documents/thirdpart/opencv-4.5.5/build/OpenCVConfig.cmake)
 #message(WARNING "OpenCV_VERSION: ${OpenCV_VERSION}")
 
 find_package(Ceres REQUIRED)
