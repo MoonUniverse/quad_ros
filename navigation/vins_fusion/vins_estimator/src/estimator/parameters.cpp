@@ -36,6 +36,11 @@ int NUM_OF_CAM;
 int STEREO;
 int USE_IMU;
 int MULTIPLE_THREAD;
+int USE_GPU;
+int USE_GPU_ACC_FLOW;
+int PUB_RECTIFY;
+Eigen::Matrix3d rectify_R_left;
+Eigen::Matrix3d rectify_R_right;
 map<int, Eigen::Vector3d> pts_gt;
 std::string IMAGE0_TOPIC, IMAGE1_TOPIC;
 std::string FISHEYE_MASK;
@@ -88,6 +93,9 @@ void readParameters(std::string config_file)
     FLOW_BACK = fsSettings["flow_back"];
 
     MULTIPLE_THREAD = fsSettings["multiple_thread"];
+
+    USE_GPU = fsSettings["use_gpu"];
+    USE_GPU_ACC_FLOW = fsSettings["use_gpu_acc_flow"];
 
     USE_IMU = fsSettings["imu"];
     printf("USE_IMU: %d\n", USE_IMU);
@@ -172,6 +180,7 @@ void readParameters(std::string config_file)
         cv::cv2eigen(cv_T, T);
         RIC.push_back(T.block<3, 3>(0, 0));
         TIC.push_back(T.block<3, 1>(0, 3));
+        fsSettings["publish_rectify"] >> PUB_RECTIFY;
     }
 
     INIT_DEPTH = 5.0;
@@ -194,6 +203,16 @@ void readParameters(std::string config_file)
         ESTIMATE_EXTRINSIC = 0;
         ESTIMATE_TD = 0;
         printf("no imu, fix extrinsic param; no time offset calibration\n");
+    }
+    if(PUB_RECTIFY)
+    {
+        cv::Mat rectify_left;
+        cv::Mat rectify_right;
+        fsSettings["cam0_rectify"] >> rectify_left;
+        fsSettings["cam1_rectify"] >> rectify_right;
+        cv::cv2eigen(rectify_left, rectify_R_left);
+        cv::cv2eigen(rectify_right, rectify_R_right);
+
     }
 
     fsSettings.release();

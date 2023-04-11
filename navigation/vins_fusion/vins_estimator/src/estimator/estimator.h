@@ -41,7 +41,7 @@ class Estimator
 {
   public:
     Estimator();
-    ~Estimator();
+
     void setParameter();
 
     // interface
@@ -52,7 +52,6 @@ class Estimator
     void processIMU(double t, double dt, const Vector3d &linear_acceleration, const Vector3d &angular_velocity);
     void processImage(const map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> &image, const double header);
     void processMeasurements();
-    void changeSensorType(int use_imu, int use_stereo);
 
     // internal
     void clearState();
@@ -92,9 +91,7 @@ class Estimator
         MARGIN_SECOND_NEW = 1
     };
 
-    std::mutex mProcess;
     std::mutex mBuf;
-    std::mutex mPropagate;
     queue<pair<double, Eigen::Vector3d>> accBuf;
     queue<pair<double, Eigen::Vector3d>> gyrBuf;
     queue<pair<double, map<int, vector<pair<int, Eigen::Matrix<double, 7, 1> > > > > > featureBuf;
@@ -134,6 +131,8 @@ class Estimator
     int frame_count;
     int sum_of_outlier, sum_of_back, sum_of_front, sum_of_invalid;
     int inputImageCnt;
+    float sum_t_feature;
+    int begin_time_count;
 
     FeatureManager f_manager;
     MotionEstimator m_estimator;
@@ -173,5 +172,4 @@ class Estimator
     Eigen::Quaterniond latest_Q;
 
     bool initFirstPoseFlag;
-    bool initThreadFlag;
 };
