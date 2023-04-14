@@ -1,5 +1,5 @@
 # MoonUniverse  QuadCopter
-
+![avatar](/quad_ros/doc/quad.png)
 ## Hardware
 1.穿越机机架（轴距250）目前使用的是px4 vision kit 中的机架
 
