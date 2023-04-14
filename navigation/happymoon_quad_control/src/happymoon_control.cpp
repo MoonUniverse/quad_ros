@@ -45,7 +45,7 @@ HappyMoonControl::HappyMoonControl() {
       boost::bind(&HappyMoonControl::serverCmdCallback, this, _1));
   // VIO nav msg sub
   vision_odom_sub = nh.subscribe<nav_msgs::Odometry>(
-      "/mavros/local_position/odom", 1,
+      "/vins_estimator/imu_propagate", 1,
       boost::bind(&HappyMoonControl::stateEstimateCallback, this, _1),
       ros::VoidConstPtr(), ros::TransportHints().tcpNoDelay());
   // TofSense msg sub
@@ -55,7 +55,8 @@ HappyMoonControl::HappyMoonControl() {
   // imu msg sub
   imu_data_sub = nh.subscribe<sensor_msgs::Imu>(
       "/mavros/imu/data_raw", 1,
-      boost::bind(&HappyMoonControl::ImuCallback, this, _1));
+      boost::bind(&HappyMoonControl::ImuCallback, this, _1),
+      ros::VoidConstPtr(), ros::TransportHints().tcpNoDelay());
   // PX4 state sub
   state_sub = nh.subscribe<mavros_msgs::State>(
       "/mavros/state", 1, boost::bind(&HappyMoonControl::state_cb, this, _1));
@@ -72,7 +73,7 @@ HappyMoonControl::HappyMoonControl() {
 
 void HappyMoonControl::runBehavior(void) {
   ros::NodeHandle n;
-  ros::Rate rate(50.0);
+  ros::Rate rate(10.0);
 
   while (n.ok()) {
     ros::spinOnce();
@@ -82,6 +83,15 @@ void HappyMoonControl::runBehavior(void) {
 
 void HappyMoonControl::state_cb(const mavros_msgs::State::ConstPtr &msg) {
   current_state = *msg;
+  if (current_state.mode == "OFFBOARD") {
+    if (!current_state.armed) {
+      arm_cmd.request.value = true;
+      arming_client.call(arm_cmd);
+      if (arm_cmd.response.success) {
+        ROS_INFO("Vehicle armed");
+      }
+    }
+  }
   // std::cout << current_state << std::endl;
 }
 
@@ -243,13 +253,15 @@ void HappyMoonControl::ControlRun(const QuadStateEstimateData &state_estimate,
   const Eigen::Quaterniond desired_attitude =
       computeDesiredAttitude(desired_acceleration, state_reference.heading,
                              state_estimate.orientation);
-
+                             
   const Eigen::Vector3d desired_r_p_y =
       mathcommon_.quaternionToEulerAnglesZYX(desired_attitude);
   geometry_msgs::Vector3 desired_r_p_y_rate;
   desired_r_p_y_rate.x = 0.5 * desired_r_p_y.x();
   desired_r_p_y_rate.y = 0.5 * desired_r_p_y.y();
   desired_r_p_y_rate.z = 0.2 * desired_r_p_y.z();
+
+  ROS_DEBUG("command.collective_thrust :%f", command.collective_thrust);
 
   mavros_msgs::AttitudeTarget expect_px;
 
@@ -259,19 +271,14 @@ void HappyMoonControl::ControlRun(const QuadStateEstimateData &state_estimate,
     expect_px.type_mask = 7;
     expect_px.orientation = geometryToEigen_.eigenToGeometry(desired_attitude);
     expect_px.body_rate = desired_r_p_y_rate;
-#define simulation
-#ifdef simulation
-    expect_px.thrust = command.collective_thrust / config.k_thrust_horz;
-    ROS_ERROR("expect_px.thrust  :%f", expect_px.thrust);
-#endif
 
 // [0.13018744 0.12771589]
-// #define realquad
+#define realquad
 #ifdef realquad
     expect_px.thrust =
-        config.k_thrust_horz *
+        happymoon_config.k_thrust_horz *
         (0.13018744 * command.collective_thrust / 7.1 + 0.12771589);
-    ROS_ERROR("expect_px.thrust  :%f", expect_px.thrust);
+    ROS_INFO("expect_px.thrust  :%f", expect_px.thrust);
 #endif
   } else {
     expect_px.header.frame_id = "base_link";

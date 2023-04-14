@@ -158,6 +158,7 @@ private:
 
   void runBehavior(void);
 
+  ros::Publisher ctrlAngleThrust;
   ros::Publisher ctrlAnglePX4;
   ros::Publisher ctrlManualControlPX4;
   ros::Publisher ctrlExpectAngleThrustPX4;
@@ -187,11 +188,12 @@ private:
 
   sensor_msgs::Joy ctrlDjiFlightData;
   sensor_msgs::Imu imu_data;
+  bool stop_quad;
   float height_dis;
 
   // Constants
   const Eigen::Vector3d kGravity_ = Eigen::Vector3d(0.0, 0.0, -9.81);
-  static constexpr double kMinNormalizedCollectiveThrust_ = 9.81;
+  static constexpr double kMinNormalizedCollectiveThrust_ = 8.0;
   static constexpr double kMaxNormalizedCollectiveThrust_ = 15.0;
   static constexpr double kAlmostZeroValueThreshold_ = 0.001;
   static constexpr double kAlmostZeroThrustThreshold_ = 0.01;
